@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: laravel-app
+    container_name: Administracion_Suscripciones
+    ports:
+      - "8080:80"  
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/storage
+      - /var/www/html/bootstrap/cache
+    depends_on:
+      - db  
+    networks:
+      - laravel-network
+
+  db:
+    image: mysql:8
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: Hol@$$2044
+      MYSQL_DATABASE: administracion_suscripciones
+    ports:
+      - "3306:3306"  
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - laravel-network
+
+volumes:
+  mysql-data: # Esto asegura la persistencia de los datos de MySQL
+
+networks:
+  laravel-network:
+    driver: bridge
