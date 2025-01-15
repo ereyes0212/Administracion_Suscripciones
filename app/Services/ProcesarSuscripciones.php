@@ -1,34 +1,16 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Services;
 
-use Illuminate\Console\Command;
 use App\Models\Suscripcion;
 use Illuminate\Support\Facades\Log;
 
-class ProcesarPagos extends Command
+class ProcesarSuscripciones
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'suscripciones:procesar';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Procesa los pagos automáticos de las suscripciones';
-
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    public function procesar()
     {
         Log::info('Iniciando el procesamiento de suscripciones...');
-        
+
         // Obtén todas las suscripciones activas
         $suscripciones = Suscripcion::where('estado', 'Activo')->get();
 
@@ -54,9 +36,7 @@ class ProcesarPagos extends Command
         Log::info('Procesamiento de suscripciones finalizado.');
     }
 
-    /**
-     * Verifica si es tiempo de procesar el pago.
-     */
+    // Función que verifica si es tiempo de procesar la suscripción
     private function esTiempoDeProcesar($suscripcion, $frecuencia)
     {
         $ultimoPago = $suscripcion->ultimo_pago ?? $suscripcion->created_at;
@@ -75,9 +55,7 @@ class ProcesarPagos extends Command
         }
     }
 
-    /**
-     * Procesa el pago de la suscripción usando la pasarela.
-     */
+    // Función para procesar el pago
     private function procesarPago($suscripcion)
     {
         try {

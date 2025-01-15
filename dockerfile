@@ -15,6 +15,9 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install gd pdo pdo_mysql \
     && rm -rf /var/lib/apt/lists/*  # Limpia la caché de apt para reducir el tamaño de la imagen
 
+# Configura la zona horaria a la hora local deseada
+RUN ln -sf /usr/share/zoneinfo/America/Mexico_City /etc/localtime && dpkg-reconfigure -f noninteractive tzdata
+
 # Habilita mod_rewrite en Apache
 RUN a2enmod rewrite
 
@@ -47,8 +50,16 @@ COPY . /var/www/html/
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
+# Crear cronjob para el comando de Laravel Schedule sin especificar usuario
+RUN echo "* * * * * /usr/local/bin/php /var/www/html/artisan schedule:run >> /var/www/html/storage/logs/cron.log 2>&1" > /etc/cron.d/laravel-schedule \
+    && chmod 0644 /etc/cron.d/laravel-schedule \
+    && crontab /etc/cron.d/laravel-schedule # Registra el cronjob sin usuario específico
+
+# Asegura que el cron esté habilitado y en ejecución
+RUN service cron start
+
 # Exponer el puerto 80 de Apache
 EXPOSE 80
 
-# Inicia Apache
-CMD ["apache2-foreground"]
+# Inicia cron y Apache
+CMD ["bash", "-c", "cron && apache2-foreground"]
