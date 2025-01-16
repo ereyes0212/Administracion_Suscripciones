@@ -1,0 +1,32 @@
+# Ignorar el directorio de node_modules
+node_modules/
+
+# Ignorar el directorio de vendor
+vendor/
+
+# Ignorar el archivo .env
+.env
+
+# Ignorar el archivo .git
+.git/
+
+
+# Ignorar el archivo de lock de NPM
+package-lock.json
+
+
+# Ignorar archivos temporales de sistema o IDE
+*.log
+*.bak
+*.swp
+*.swo
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Ignorar el directorio de almacenamiento de Laravel
+storage/
+
+# Ignorar las carpetas de caché de Laravel
+bootstrap/cache/
