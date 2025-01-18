@@ -21,6 +21,12 @@ class Suscripcion extends Model
         'fecha_renovacion',
     ];
 
+    // Convierte 'fecha_renovacion' a un objeto Carbon automáticamente
+    protected $casts = [
+        'fecha_renovacion' => 'datetime',
+        'fecha_inicio' => 'datetime',  // Asegúrate de que 'fecha_inicio' también sea tratado como datetime si es necesario
+    ];
+
     /**
      * Relación: Una suscripción pertenece a un cliente.
      * 

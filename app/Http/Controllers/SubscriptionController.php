@@ -13,9 +13,6 @@ use Exception;
 class SubscriptionController extends Controller
 {
 
-
-
-
     public function mostrarSuscripciones()
     {
         // Obtener todas las suscripciones desde la base de datos
@@ -35,29 +32,31 @@ class SubscriptionController extends Controller
         return view('clientes.index', compact('clientes'));
     }
 
-
     public function procesarPago(Request $request)
     {
         try {
+
+            Log::info('Datos recibidos en la solicitud:', $request->all());
             // Validar los datos recibidos
-            // $validatedData = $request->validate([
-            //     'customer_name' => 'required|string',
-            //     'card_number' => 'required|string',
-            //     'card_holder' => 'required|string',
-            //     'card_expire' => 'required|string',
-            //     'card_cvv' => 'required|string',
-            //     'customer_email' => 'required|email',
-            //     'billing_address' => 'required|string',
-            //     'billing_city' => 'required|string',
-            //     'billing_country' => 'required|string',
-            //     'billing_phone' => 'required|string',
-            //     'order_currency' => 'required|string',
-            //     'order_amount' => 'required|numeric',
-            //     'recurrence' => 'required|string', // Agregado: frecuencia de la suscripción (diario, semanal, mensual)
-            // ]);
-
+            $validatedData = $request->validate([
+                'customer_name' => 'required|string',
+                'card_number' => 'required|string',
+                'card_holder' => 'required|string',
+                'card_expire' => 'required|string',
+                'card_cvv' => 'required|string',
+                'customer_email' => 'required|email',
+                'billing_address' => 'required|string',
+                'billing_city' => 'required|string',
+                'billing_country' => 'required|string',
+                'billing_phone' => 'required|string',
+                'order_currency' => 'required|string',
+                'order_amount' => 'required|numeric',
+                'recurrence' => 'required|string', // Agregado: frecuencia de la suscripción (diario, semanal, mensual)
+            ]);
+    
+            // Buscar o crear cliente
             $cliente = Cliente::where('correo', $request->input('customer_email'))->first();
-
+    
             // Si no existe, creamos un nuevo cliente
             if (!$cliente) {
                 $cliente = Cliente::create([
@@ -69,22 +68,17 @@ class SubscriptionController extends Controller
                     'telefono' => $request->input('billing_phone'),
                 ]);
             }
-
+    
             // Verificar si el token fue proporcionado
             $token = $request->input('token');
-            if (!is_null($token)) {
-                $response = $this->procesarPagoConBancoLocal($token);
-                return response()->json($response); // Retornamos la respuesta que da procesarPagoConBancoLocal
+    
+            // Si el token no fue enviado, lo generamos en el servicio de pago
+            if (is_null($token)) {
+                $response = $this->procesarPagoConBancoLocal(); // Generar y procesar pago
+            } else {
+                $response = $this->procesarPagoConBancoLocal($token); // Usar el token recibido
             }
-
-
-            // Si no viene token, generamos un token aleatorio
-            $tokenGenerado = Str::random(36); // Generar un token aleatorio de 36 caracteres
-            Log::info("Nuevo token generado: " . $tokenGenerado);
-
-            // Procesar el pago con los datos de la tarjeta (pasando el token generado)
-            $response = $this->procesarPagoConBancoLocal($tokenGenerado);
-
+    
             // Verificamos si el pago fue exitoso
             if ($response['status'] === 'success') {
                 // Guardar la suscripción en la base de datos
@@ -95,9 +89,29 @@ class SubscriptionController extends Controller
                 $suscripcion->estado = 'Activo'; // Estado de la suscripción
                 $suscripcion->tipo_recurrencia = $request->input('recurrence'); // Tipo de recurrencia (diario, mensual, etc.)
                 $suscripcion->fecha_inicio = now(); // Fecha de inicio de la suscripción
-                $suscripcion->fecha_renovacion = now()->addMonth(); // Fecha de renovación de la suscripción, en este caso mensual
+                
+                // Determinar la fecha de renovación según el tipo de recurrencia
+                switch ($request->input('recurrence')) {
+                    case 'Diario':
+                        $suscripcion->fecha_renovacion = now()->addDay(); // Agregar un día a la fecha actual
+                        break;
+                    case 'Semanal':
+                        $suscripcion->fecha_renovacion = now()->addWeek(); // Agregar una semana a la fecha actual
+                        break;
+                    case 'Mensual':
+                        $suscripcion->fecha_renovacion = now()->addMonth(); // Agregar un mes a la fecha actual
+                        break;
+                    case 'Anual':
+                        $suscripcion->fecha_renovacion = now()->addYear(); // Agregar un año a la fecha actual
+                        break;
+                    default:
+                        // Si no se encuentra un valor válido, asignamos un valor predeterminado (opcional)
+                        $suscripcion->fecha_renovacion = now()->addMonth(); // Predeterminado a mensual
+                        break;
+                }
+                
                 $suscripcion->save(); // Guardamos la suscripción en la base de datos
-
+    
                 // Devolver respuesta exitosa
                 return response()->json([
                     'status' => 'success',
@@ -119,36 +133,29 @@ class SubscriptionController extends Controller
         }
     }
     
-
+    
     private function procesarPagoConBancoLocal($token = null)
     {
-        // Verificar si el token fue proporcionado
-        if (!is_null($token)) {
+        // Si el token no fue recibido, generamos uno nuevo
+        if (is_null($token)) {
+            $token = Str::random(36);  // Generar un token aleatorio de 36 caracteres
+            Log::info("Nuevo token generado: ". $token);
+        } else {
             Log::info("Token recibido: ". $token);
-            
-            // Si el token existe, retornar el éxito inmediatamente
-            return [
-                'status' => 'success',
-                'message' => 'Transacción realizada con éxito',
-                'token' => $token
-            ];
         }
-        
-        // Si no se recibe un token, generar uno nuevo
-        $token = Str::random(36);  // Generar un token aleatorio de 36 caracteres
-        Log::info("Nuevo token generado: ". $token);
-        
+    
         // Simulación del estado de la transacción
         $status = 'success';  
         $message = $status === 'success' ? 'Transacción realizada con éxito' : 'Hubo un error en la transacción';
         
-        // Retornar la respuesta con el nuevo token
+        // Retornar la respuesta con el token
         return [
             'status' => $status,
             'message' => $message,
             'token' => $token
         ];
     }
+    
     
     
 }
