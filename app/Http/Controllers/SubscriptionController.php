@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Models\Ordenes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use App\Models\Suscripcion; // Importamos el modelo Suscripcion
 use Illuminate\Support\Str;  // Necesario para usar la función Str::random
 use Exception;
+use Illuminate\Support\Facades\Http;
 
 class SubscriptionController extends Controller
 {
@@ -35,8 +37,8 @@ class SubscriptionController extends Controller
     public function procesarPago(Request $request)
     {
         try {
-
             Log::info('Datos recibidos en la solicitud:', $request->all());
+    
             // Validar los datos recibidos
             $validatedData = $request->validate([
                 'customer_name' => 'required|string',
@@ -48,16 +50,17 @@ class SubscriptionController extends Controller
                 'billing_address' => 'required|string',
                 'billing_city' => 'required|string',
                 'billing_country' => 'required|string',
+                'billing_state' => 'required|string',
                 'billing_phone' => 'required|string',
+                'order_id' => 'required|string',
                 'order_currency' => 'required|string',
                 'order_amount' => 'required|numeric',
-                'recurrence' => 'required|string', // Agregado: frecuencia de la suscripción (diario, semanal, mensual)
+                'recurrence' => 'required|string',
             ]);
     
             // Buscar o crear cliente
             $cliente = Cliente::where('correo', $request->input('customer_email'))->first();
-    
-            // Si no existe, creamos un nuevo cliente
+
             if (!$cliente) {
                 $cliente = Cliente::create([
                     'nombre' => $request->input('customer_name'),
@@ -68,94 +71,202 @@ class SubscriptionController extends Controller
                     'telefono' => $request->input('billing_phone'),
                 ]);
             }
+            
+            // Inspeccionar la estructura real del objeto cliente
+            Log::info('Cliente creado con ID: ' . json_encode($cliente));
+            
+            // Crear la orden antes de procesar el pago
+            $orden = new Ordenes();
+            $orden->cliente_id = $cliente->id;
+            $orden->estado = 'Pendiente'; 
+            $orden->fecha = now();
+            $orden->save();
     
-            // Verificar si el token fue proporcionado
-            $token = $request->input('token');
+            // Realizar el pago con el banco local
+            $response = $this->procesarPagoConBancoLocal($request);
     
-            // Si el token no fue enviado, lo generamos en el servicio de pago
-            if (is_null($token)) {
-                $response = $this->procesarPagoConBancoLocal(); // Generar y procesar pago
-            } else {
-                $response = $this->procesarPagoConBancoLocal($token); // Usar el token recibido
-            }
-    
-            // Verificamos si el pago fue exitoso
             if ($response['status'] === 'success') {
-                // Guardar la suscripción en la base de datos
-                $suscripcion = new Suscripcion();
-                $suscripcion->cliente_id = $cliente->id; // Relacionamos la suscripción con el cliente
-                $suscripcion->monto = $request->input('order_amount');
-                $suscripcion->token_pago = $response['token']; // Token de pago
-                $suscripcion->estado = 'Activo'; // Estado de la suscripción
-                $suscripcion->tipo_recurrencia = $request->input('recurrence'); // Tipo de recurrencia (diario, mensual, etc.)
-                $suscripcion->fecha_inicio = now(); // Fecha de inicio de la suscripción
-                
-                // Determinar la fecha de renovación según el tipo de recurrencia
-                switch ($request->input('recurrence')) {
-                    case 'Diario':
-                        $suscripcion->fecha_renovacion = now()->addDay(); // Agregar un día a la fecha actual
-                        break;
-                    case 'Semanal':
-                        $suscripcion->fecha_renovacion = now()->addWeek(); // Agregar una semana a la fecha actual
-                        break;
-                    case 'Mensual':
-                        $suscripcion->fecha_renovacion = now()->addMonth(); // Agregar un mes a la fecha actual
-                        break;
-                    case 'Anual':
-                        $suscripcion->fecha_renovacion = now()->addYear(); // Agregar un año a la fecha actual
-                        break;
-                    default:
-                        // Si no se encuentra un valor válido, asignamos un valor predeterminado (opcional)
-                        $suscripcion->fecha_renovacion = now()->addMonth(); // Predeterminado a mensual
-                        break;
-                }
-                
-                $suscripcion->save(); // Guardamos la suscripción en la base de datos
+                // Si la transacción fue exitosa, procedemos a tokenizar la tarjeta
+                $tokenData = $this->tokenizarTarjeta($request);
     
-                // Devolver respuesta exitosa
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Pago procesado con éxito y suscripción guardada.',
-                    'token' => $response['token']
-                ]);
+                if ($tokenData['status'] === 'success') {
+                    // Guardar la suscripción
+                    $suscripcion = new Suscripcion();
+                    $suscripcion->cliente_id = $cliente->id;
+                    $suscripcion->monto = $request->input('order_amount');
+                    $suscripcion->token_pago = $tokenData['token']; // Token de pago
+                    $suscripcion->estado = 'Activo'; // Estado de la suscripción
+                    $suscripcion->tipo_recurrencia = $request->input('recurrence');
+                    $suscripcion->fecha_inicio = now();
+                    $suscripcion->fecha_ultimo_pago = now();
+    
+                    // Fecha de renovación según recurrencia
+                    switch ($request->input('recurrence')) {
+                        case 'Diario':
+                            $suscripcion->fecha_renovacion = now()->addDay();
+                            break;
+                        case 'Semanal':
+                            $suscripcion->fecha_renovacion = now()->addWeek();
+                            break;
+                        case 'Mensual':
+                            $suscripcion->fecha_renovacion = now()->addMonth();
+                            break;
+                        case 'Anual':
+                            $suscripcion->fecha_renovacion = now()->addYear();
+                            break;
+                        default:
+                            $suscripcion->fecha_renovacion = now()->addMonth();
+                            break;
+                    }
+    
+                    $suscripcion->save();
+    
+                    // Actualizar el estado de la orden a "Pagado"
+                    $orden->estado = 'Pagado';
+                    $orden->suscripcion_id = $suscripcion->id;  // Asocia la orden a la suscripción
+                    $orden->orden_id_wp = $request->input('order_id');
+                    $orden->save();
+    
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Pago procesado con éxito, suscripción guardada y orden marcada como pagada.',
+                        'token' => $tokenData['token']
+                    ]);
+                } else {
+                    // Error en la tokenización, actualizamos la orden a 'Rechazado'
+                    $orden->estado = 'Rechazado';
+                    $orden->save();
+    
+                    return response()->json([
+                        'status' => 'failed',
+                        'message' => 'Error al tokenizar la tarjeta. Intente nuevamente.'
+                    ], 400);
+                }
             } else {
-                // En caso de fallo en el pago
+                // Error en el pago, actualizamos la orden a 'Rechazado'
+                $orden->estado = 'Rechazado';
+                $orden->save();
+    
                 return response()->json([
                     'status' => 'failed',
                     'message' => 'Hubo un error al procesar el pago. Intente nuevamente.'
-                ], 400); // Respondemos con un error 400 si el pago falla
+                ], 400);
             }
         } catch (Exception $e) {
-            // Manejo de excepciones
             Log::error("Error al procesar el pago: " . $e->getMessage());
-            // Respuesta de error con código HTTP 500
             return response()->json(['status' => 'failed', 'message' => 'Error al procesar el pago. Intente nuevamente.'], 500);
         }
     }
     
     
-    private function procesarPagoConBancoLocal($token = null)
-    {
-        // Si el token no fue recibido, generamos uno nuevo
-        if (is_null($token)) {
-            $token = Str::random(36);  // Generar un token aleatorio de 36 caracteres
-            Log::info("Nuevo token generado: ". $token);
-        } else {
-            Log::info("Token recibido: ". $token);
-        }
+
     
-        // Simulación del estado de la transacción
-        $status = 'success';  
-        $message = $status === 'success' ? 'Transacción realizada con éxito' : 'Hubo un error en la transacción';
-        
-        // Retornar la respuesta con el token
-        return [
-            'status' => $status,
-            'message' => $message,
-            'token' => $token
+    private function procesarPagoConBancoLocal($request)
+    {
+        $url = 'https://pixel-pay.com/api/v2/transaction/sale';
+    
+        $headers = [
+            'x-auth-key' => '1234567890',
+            'x-auth-hash' => '36cdf8271723276cb6f94904f8bde4b6',
         ];
+    
+        // Datos para la transacción
+        $data = [
+            'customer_name' => $request->input('customer_name'),
+            'card_number' => $request->input('card_number'),
+            'card_holder' => $request->input('card_holder'),
+            'card_expire' => $request->input('card_expire'),
+            'card_cvv' => $request->input('card_cvv'),
+            'customer_email' => $request->input('customer_email'),
+            'billing_address' => $request->input('billing_address'),
+            'billing_city' => $request->input('billing_city'),
+            'billing_country' => $request->input('billing_country'),
+            'billing_state' => $request->input('billing_state'),
+            'billing_phone' => $request->input('billing_phone'),
+            'order_id' => $request->input('order_id'),
+            'order_currency' => $request->input('order_currency'),
+            'order_amount' => $request->input('order_amount'),
+            'env' => 'sandbox',
+            'lang' => 'es',
+        ];
+        Log::info('Datos completos de la transacción:', $data);
+
+
+    
+        $response = Http::withHeaders($headers)->post($url, $data);
+    
+        $responseData = $response->json();
+    
+        // Verificamos si la respuesta fue exitosa
+        if ($responseData['success'] === true) {
+            return [
+                'status' => 'success',
+                'message' => 'Pago realizado exitosamente',
+                'token' => $responseData['data']['payment_uuid'], // Usamos el UUID como token
+            ];
+        } else {
+            // Log de error
+            Log::error('Error en la transacción', [
+                'request' => $data,
+                'response' => $responseData,
+            ]);
+            
+            return [
+                'status' => 'failed',
+                'message' => 'Error en la transacción: ' . $responseData['message'],
+            ];
+        }
     }
     
+    private function tokenizarTarjeta($request)
+    {
+        $url = 'https://pixel-pay.com/api/v2/tokenization/card';
     
+        $headers = [
+            'x-auth-key' => '1234567890',
+            'x-auth-hash' => '36cdf8271723276cb6f94904f8bde4b6',
+        ];
+    
+        // Datos para tokenizar la tarjeta
+        $data = [
+            'cvv2' => $request->input('card_cvv'),
+            'number' => $request->input('card_number'),
+            'expire_month' => substr($request->input('card_expire'), 0, 2), // Mes
+            'expire_year' => '20' . substr($request->input('card_expire'), 2, 4), // Año
+            'cardholder' => $request->input('card_holder'),
+            'address' => $request->input('billing_address'),
+            'country' => $request->input('billing_country'),
+            'city' => $request->input('billing_city'),
+            'state' => $request->input('billing_state'),
+            'zip' => $request->input('billing_zip'),
+            'phone' => $request->input('billing_phone'),
+            'lang' => 'es',
+            'env' => 'sandbox',
+        ];
+    
+        $response = Http::withHeaders($headers)->post($url, $data);
+    
+        $responseData = $response->json();
+    
+        // Verificamos si la tokenización fue exitosa
+        if ($responseData['success'] === true) {
+            return [
+                'status' => 'success',
+                'message' => 'Tarjeta tokenizada con éxito',
+                'token' => $responseData['data']['token'], // Retornamos el token de la tarjeta
+            ];
+        } else {
+            // Log de error
+            Log::error('Error al tokenizar la tarjeta', [
+                'request' => $data,
+                'response' => $responseData,
+            ]);
+    
+            return [
+                'status' => 'failed',
+                'message' => 'Error al tokenizar la tarjeta: ' . $responseData['message'],
+            ];
+        }
+    }
     
 }

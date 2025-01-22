@@ -12,14 +12,14 @@ class Clientes extends Migration
     public function up(): void
     {
         Schema::create('clientes', function (Blueprint $table) {
-            $table->id();  // Campo 'id' como clave primaria
-            $table->string('nombre');  // Nombre del cliente
-            $table->string('correo')->unique();  // Correo electrónico único
-            $table->string('direccion')->nullable();  // Dirección del cliente
-            $table->string('ciudad')->nullable();  // Ciudad
-            $table->string('pais')->nullable();  // País
-            $table->string('telefono')->nullable();  // Teléfono
-            $table->timestamps();  // Campos 'created_at' y 'updated_at'
+            $table->uuid('id')->primary();  // Clave primaria UUID
+            $table->string('nombre');  
+            $table->string('correo')->unique();  
+            $table->string('direccion')->nullable();  
+            $table->string('ciudad')->nullable();  
+            $table->string('pais')->nullable();  
+            $table->string('telefono')->nullable();  
+            $table->timestamps();  
         });
     }
 
@@ -28,6 +28,6 @@ class Clientes extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('clientes');  // Elimina la tabla 'clientes'
+        Schema::dropIfExists('clientes');  
     }
 }

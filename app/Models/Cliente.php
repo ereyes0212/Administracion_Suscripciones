@@ -2,21 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
-namespace App\Models;
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Cliente extends Model
 {
     use HasFactory;
 
-    // Define la tabla asociada a este modelo
     protected $table = 'clientes';
 
-    // Especifica los campos que pueden ser asignados masivamente
+    // Definir la clave primaria correctamente
+    protected $primaryKey = 'id';
+    public $incrementing = false;  // Indicar que no es autoincremental
+    protected $keyType = 'string';  // UUID es una cadena
+
+    // Campos asignables masivamente
     protected $fillable = [
         'nombre',
         'correo',
@@ -26,14 +27,15 @@ class Cliente extends Model
         'telefono',
     ];
 
-    /**
-     * Relación: Un cliente puede tener muchas suscripciones.
-     * 
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function suscripciones()
+    // Generar UUID automáticamente al crear el cliente
+    protected static function boot()
     {
-        return $this->hasMany(Suscripcion::class);
+        parent::boot();
+
+        static::creating(function ($cliente) {
+            if (empty($cliente->id) || $cliente->id == 0) {
+                $cliente->id = (string) Str::uuid();  // Asignar UUID correctamente
+            }
+        });
     }
 }
-
