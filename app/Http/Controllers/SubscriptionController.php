@@ -34,6 +34,15 @@ class SubscriptionController extends Controller
         return view('clientes.index', compact('clientes'));
     }
 
+    public function ordenes()
+    {
+        // Obtener todas las órdenes desde la base de datos con las relaciones cliente y suscripción
+        $ordenes = Ordenes::with(['cliente', 'suscripcion'])->get();
+    
+        // Pasar las órdenes a la vista
+        return view('ordenes.index', compact('ordenes'));
+    }
+
     public function procesarPago(Request $request)
     {
         try {

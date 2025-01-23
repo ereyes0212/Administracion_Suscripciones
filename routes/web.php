@@ -25,6 +25,7 @@ Route::post('/api/procesar_suscripcion', [SubscriptionController::class, 'proces
 
 Route::get('/suscripciones', [SubscriptionController::class, 'mostrarSuscripciones']);
 Route::get('/clientes', [SubscriptionController::class, 'clientes']);
+Route::get('/ordenes', [SubscriptionController::class, 'ordenes']);
 
 
 require __DIR__.'/auth.php';

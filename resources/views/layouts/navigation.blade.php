@@ -22,6 +22,9 @@
                     <x-nav-link :href="url('/clientes')" :active="request()->is('clientes')">
                         {{ __('Clientes') }}
                     </x-nav-link>
+                    <x-nav-link :href="url('/ordenes')" :active="request()->is('ordenes')">
+                        {{ __('Ordenes') }}
+                    </x-nav-link>
 
                 </div>
             </div>
