@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Ordenes;
+use App\Models\Orden;
 use App\Models\Suscripcion;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
@@ -28,7 +28,7 @@ class ProcesarSuscripciones
 
 
                     $orderId = $this->obtenerOrderId($suscripcion->token_pago);
-                    $orden = new Ordenes();
+                    $orden = new Orden();
                     $orden->cliente_id = $suscripcion->cliente_id;
                     $orden->suscripcion_id = $suscripcion->id;
                     $orden->orden_id_wp = $orderId;
