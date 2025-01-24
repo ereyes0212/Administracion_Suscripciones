@@ -38,9 +38,16 @@ class SubscriptionController extends Controller
 
     public function ordenes()
     {
-        $ordenes = Orden::with(['cliente', 'suscripcion.membresia']);
+        // Obtener las órdenes con las relaciones necesarias
+        $ordenes = Orden::with(['cliente', 'suscripcion.membresia'])->get();
+    
+        // Loguear las órdenes en el archivo de log
+        error_log('Órdenes obtenidas: ' . print_r($ordenes, true));
+    
+        // Pasar las órdenes a la vista
         return view('ordenes.index', compact('ordenes'));
     }
+    
 
 
     public function CrearMembresia(Request $request)
