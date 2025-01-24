@@ -26,7 +26,7 @@ Route::post('/api/procesar_suscripcion', [SubscriptionController::class, 'proces
 Route::get('/suscripciones', [SubscriptionController::class, 'mostrarSuscripciones']);
 Route::get('/clientes', [SubscriptionController::class, 'clientes']);
 Route::get('/ordenes', [SubscriptionController::class, 'ordenes']);
-Route::get('/membresia', [SubscriptionController::class, 'membresias']);
+Route::get('/membresias', [SubscriptionController::class, 'membresias']);
 
 Route::post('/createmembresia', action: [SubscriptionController::class, 'CrearMembresia'])
 ->withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
