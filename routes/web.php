@@ -27,5 +27,8 @@ Route::get('/suscripciones', [SubscriptionController::class, 'mostrarSuscripcion
 Route::get('/clientes', [SubscriptionController::class, 'clientes']);
 Route::get('/ordenes', [SubscriptionController::class, 'ordenes']);
 
+Route::post('/createmembresia', action: [SubscriptionController::class, 'CrearMembresia'])
+->withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
 
 require __DIR__.'/auth.php';

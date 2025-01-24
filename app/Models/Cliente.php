@@ -4,21 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Cliente extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
 
     protected $table = 'clientes';
+    protected $keyType = 'string';
+    public $incrementing = false;
 
-    // Definir la clave primaria correctamente
-    protected $primaryKey = 'id';
-    public $incrementing = false;  // Indicar que no es autoincremental
-    protected $keyType = 'string';  // UUID es una cadena
-
-    // Campos asignables masivamente
     protected $fillable = [
+        'id',
         'nombre',
         'correo',
         'direccion',
@@ -27,15 +24,13 @@ class Cliente extends Model
         'telefono',
     ];
 
-    // Generar UUID automáticamente al crear el cliente
-    protected static function boot()
+    public function suscripciones()
     {
-        parent::boot();
+        return $this->hasMany(Suscripcion::class, 'cliente_id');
+    }
 
-        static::creating(function ($cliente) {
-            if (empty($cliente->id) || $cliente->id == 0) {
-                $cliente->id = (string) Str::uuid();  // Asignar UUID correctamente
-            }
-        });
+    public function ordenes()
+    {
+        return $this->hasMany( Orden::class, 'cliente_id');
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Models\Membresia;
+use App\Models\Orden;
 use App\Models\Ordenes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -36,12 +38,46 @@ class SubscriptionController extends Controller
 
     public function ordenes()
     {
-        // Obtener todas las órdenes desde la base de datos con las relaciones cliente y suscripción
-        $ordenes = Ordenes::with(['cliente', 'suscripcion'])->get();
-    
-        // Pasar las órdenes a la vista
+        $ordenes = Orden::with(['cliente', 'suscripcion.membresia']);
         return view('ordenes.index', compact('ordenes'));
     }
+
+
+    public function CrearMembresia(Request $request)
+    {
+        try {
+            // Validar la entrada (si es necesario)
+            // $request->validate([
+            //     'nombre' => 'required|string|max:255',
+            //     'precio' => 'required|numeric|min:0',
+            //     'tipo_recurrencia' => 'required|in:diario,semanal,mensual,anual',
+            //     'descripcion' => 'nullable|string',
+            // ]);
+            $recurrencia = strtolower( $request->tipo_recurrencia);
+            // Crear la nueva membresía
+            $membresia = Membresia::create([
+                'id' => $request->id, 
+                'nombre' => $request->nombre,
+                'precio' => $request->precio,
+                'tipo_recurrencia' => $recurrencia,
+                'descripcion' => $request->descripcion,
+            ]);
+    
+            // Retornar la respuesta en formato JSON con el objeto creado
+            return response()->json([
+                'message' => 'Membresía creada correctamente.',
+                'membresia' => $membresia
+            ], 201); // Código 201 para creado exitosamente
+        } catch (\Exception $e) {
+            // En caso de error, devolver el mensaje de error en formato JSON
+            return response()->json([
+                'message' => 'Hubo un error al crear la membresía.',
+                'error' => $e->getMessage()
+            ], 500); // Código 500 para error interno del servidor
+        }
+    }
+    
+    
 
     public function procesarPago(Request $request)
     {
@@ -85,7 +121,7 @@ class SubscriptionController extends Controller
             Log::info('Cliente creado con ID: ' . json_encode($cliente));
             
             // Crear la orden antes de procesar el pago
-            $orden = new Ordenes();
+            $orden = new Orden();
             $orden->cliente_id = $cliente->id;
             $orden->estado = 'Pendiente'; 
             $orden->fecha = now();
@@ -102,10 +138,10 @@ class SubscriptionController extends Controller
                     // Guardar la suscripción
                     $suscripcion = new Suscripcion();
                     $suscripcion->cliente_id = $cliente->id;
+                    $suscripcion->membresia_id = $request->input('membresia_id');
                     $suscripcion->monto = $request->input('order_amount');
                     $suscripcion->token_pago = $tokenData['token']; // Token de pago
                     $suscripcion->estado = 'Activo'; // Estado de la suscripción
-                    $suscripcion->tipo_recurrencia = $request->input('recurrence');
                     $suscripcion->fecha_inicio = now();
                     $suscripcion->fecha_ultimo_pago = now();
     
