@@ -13,6 +13,7 @@ use App\Models\Suscripcion; // Importamos el modelo Suscripcion
 use Illuminate\Support\Str;  // Necesario para usar la función Str::random
 use Exception;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\ValidationException;
 
 class SubscriptionController extends Controller
 {
@@ -120,7 +121,9 @@ class SubscriptionController extends Controller
                     'card_expire'     => 'required|digits:4', // Exactamente 4 caracteres numéricos
                 ]);
             
-            } catch (\Illuminate\Validation\ValidationException $e) {
+            } catch (ValidationException $e) {
+                Log::error('Errores de validación:', $e->errors());  // Registrar los errores en el log
+            
                 return response()->json([
                     'status'  => 'failed',
                     'message' => 'Errores de validación',
