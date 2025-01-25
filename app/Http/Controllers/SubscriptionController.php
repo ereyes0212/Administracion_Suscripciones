@@ -112,7 +112,7 @@ class SubscriptionController extends Controller
             
                     'billing_address' => 'required|string', // Texto corto requerido
                     'billing_state'   => 'required|string', // Texto corto requerido
-                    'billing_country' => 'required|string|min:3|max:15', // Texto corto, entre 3 y 15 caracteres
+                    'billing_country' => 'required|string', // Texto corto, entre 3 y 15 caracteres
                     'billing_phone'   => 'required|digits:8', // Exactamente 8 caracteres numéricos
             
                     'card_number'     => 'required|digits:16', // Exactamente 16 caracteres numéricos
