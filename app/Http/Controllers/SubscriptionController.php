@@ -119,8 +119,51 @@ class SubscriptionController extends Controller
                     'card_holder'     => 'required|string|min:3|max:120', // Texto corto, mínimo 3, máximo 120 caracteres
                     'card_cvv'        => 'required|digits_between:3,4', // Numérico, entre 3 y 4 caracteres
                     'card_expire'     => 'required|digits:4', // Exactamente 4 caracteres numéricos
+                ], [
+                    // Mensajes de error personalizados en español
+                    'order_id.required' => 'El ID de la orden es obligatorio.',
+                    'order_id.alpha_num' => 'El ID de la orden debe ser alfanumérico.',
+                    'order_currency.required' => 'La moneda es obligatoria.',
+                    'order_currency.in' => 'La moneda debe ser USD, HNL o NIO.',
+                    'order_currency.size' => 'La moneda debe tener exactamente 3 caracteres.',
+                    'order_amount.required' => 'El monto de la orden es obligatorio.',
+                    'order_amount.numeric' => 'El monto de la orden debe ser un número.',
+                    'order_amount.min' => 'El monto de la orden no puede ser menor a 0.',
+                    
+                    'customer_name.required' => 'El nombre del cliente es obligatorio.',
+                    'customer_name.string' => 'El nombre del cliente debe ser un texto.',
+                    'customer_name.min' => 'El nombre del cliente debe tener al menos 3 caracteres.',
+                    'customer_name.max' => 'El nombre del cliente no puede tener más de 120 caracteres.',
+                    
+                    'customer_email.required' => 'El correo electrónico es obligatorio.',
+                    'customer_email.email' => 'El correo electrónico debe ser válido.',
+                    
+                    'billing_address.required' => 'La dirección de facturación es obligatoria.',
+                    'billing_address.string' => 'La dirección de facturación debe ser un texto.',
+                    
+                    'billing_state.required' => 'El estado de facturación es obligatorio.',
+                    'billing_state.string' => 'El estado de facturación debe ser un texto.',
+                    
+                    'billing_country.required' => 'El país de facturación es obligatorio.',
+                    'billing_country.string' => 'El país de facturación debe ser un texto.',
+                    
+                    'billing_phone.required' => 'El teléfono de facturación es obligatorio.',
+                    'billing_phone.digits' => 'El teléfono de facturación debe tener exactamente 8 dígitos.',
+                    
+                    'card_number.required' => 'El número de la tarjeta es obligatorio.',
+                    'card_number.digits' => 'El número de la tarjeta debe tener exactamente 16 dígitos.',
+                    
+                    'card_holder.required' => 'El titular de la tarjeta es obligatorio.',
+                    'card_holder.string' => 'El titular de la tarjeta debe ser un texto.',
+                    'card_holder.min' => 'El titular de la tarjeta debe tener al menos 3 caracteres.',
+                    'card_holder.max' => 'El titular de la tarjeta no puede tener más de 120 caracteres.',
+                    
+                    'card_cvv.required' => 'El CVV de la tarjeta es obligatorio.',
+                    'card_cvv.digits_between' => 'El CVV debe tener entre 3 y 4 dígitos.',
+                    
+                    'card_expire.required' => 'La fecha de vencimiento de la tarjeta es obligatoria.',
+                    'card_expire.digits' => 'La fecha de vencimiento debe tener exactamente 4 dígitos.',
                 ]);
-            
             } catch (ValidationException $e) {
                 Log::error('Errores de validación:', $e->errors());  // Registrar los errores en el log
             
@@ -130,6 +173,7 @@ class SubscriptionController extends Controller
                     'errors'  => $e->errors()  // Devuelve los campos que no cumplen con la validación
                 ], 422);
             }
+            
             
     
             // 1. Procesar el pago con el banco local primero
