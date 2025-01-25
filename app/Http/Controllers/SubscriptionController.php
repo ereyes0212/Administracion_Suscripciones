@@ -100,23 +100,34 @@ class SubscriptionController extends Controller
             Log::info('Datos recibidos en la solicitud:', $request->all());
     
             // Validar los datos recibidos
-            $validatedData = $request->validate([
-                'customer_name'   => 'required|string',
-                'card_number'     => 'required|string',
-                'card_holder'     => 'required|string',
-                'card_expire'     => 'required|string',
-                'card_cvv'        => 'required|string',
-                'customer_email'  => 'required|email',
-                'billing_address' => 'required|string',
-                'billing_city'    => 'required|string',
-                'billing_country' => 'required|string',
-                'billing_state'   => 'required|string',
-                'billing_phone'   => 'required|string',
-                'order_id'        => 'required|string',
-                'order_currency'  => 'required|string',
-                'order_amount'    => 'required|numeric',
-                'recurrence'      => 'required|string',
-            ]);
+            try {
+                $validatedData = $request->validate([
+                    'order_id'        => 'required|alpha_num', // Alfanumérico requerido
+                    'order_currency'  => 'required|in:USD,HNL,NIO|size:3', // Solo USD, HNL o NIO, exactamente 3 caracteres en mayúscula
+                    'order_amount'    => 'required|numeric|min:0', // Número decimal requerido
+            
+                    'customer_name'   => 'required|string|min:3|max:120', // Mínimo 3, máximo 120 caracteres
+                    'customer_email'  => 'required|email', // Formato de correo válido
+            
+                    'billing_address' => 'required|string', // Texto corto requerido
+                    'billing_state'   => 'required|string', // Texto corto requerido
+                    'billing_country' => 'required|string|min:3|max:15', // Texto corto, entre 3 y 15 caracteres
+                    'billing_phone'   => 'required|digits:8', // Exactamente 8 caracteres numéricos
+            
+                    'card_number'     => 'required|digits:16', // Exactamente 16 caracteres numéricos
+                    'card_holder'     => 'required|string|min:3|max:120', // Texto corto, mínimo 3, máximo 120 caracteres
+                    'card_cvv'        => 'required|digits_between:3,4', // Numérico, entre 3 y 4 caracteres
+                    'card_expire'     => 'required|digits:4', // Exactamente 4 caracteres numéricos
+                ]);
+            
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                return response()->json([
+                    'status'  => 'failed',
+                    'message' => 'Errores de validación',
+                    'errors'  => $e->errors()  // Devuelve los campos que no cumplen con la validación
+                ], 422);
+            }
+            
     
             // 1. Procesar el pago con el banco local primero
             $response = $this->procesarPagoConBancoLocal($request);
@@ -129,34 +140,34 @@ class SubscriptionController extends Controller
                 ], 400);
             }
     
-            // 2. Buscar o crear cliente solo si el pago fue exitoso
-            $cliente = Cliente::where('correo', $request->input('customer_email'))->first();
-    
-            if (!$cliente) {
-                $cliente = Cliente::create([
-                    'nombre'    => $request->input('customer_name'),
-                    'correo'    => $request->input('customer_email'),
-                    'direccion' => $request->input('billing_address'),
-                    'ciudad'    => $request->input('billing_city'),
-                    'pais'      => $request->input('billing_country'),
-                    'telefono'  => $request->input('billing_phone'),
-                ]);
-            }
-    
-            Log::info('Cliente creado con ID: ' . json_encode($cliente));
-    
-            // 3. Crear la orden
-            $orden = new Orden();
-            $orden->cliente_id = $cliente->id;
-            $orden->estado = 'Pendiente';
-            $orden->fecha = now();
-            $orden->save();
-    
-            // 4. Tokenizar la tarjeta después del pago exitoso
+            // 2. Tokenizar la tarjeta después del pago exitoso
             $tokenData = $this->tokenizarTarjeta($request);
     
             if ($tokenData['status'] === 'success') {
-                // Crear la suscripción
+                // 3. Buscar o crear cliente solo después de tokenizar exitosamente
+                $cliente = Cliente::where('correo', $request->input('customer_email'))->first();
+    
+                if (!$cliente) {
+                    $cliente = Cliente::create([
+                        'nombre'    => $request->input('customer_name'),
+                        'correo'    => $request->input('customer_email'),
+                        'direccion' => $request->input('billing_address'),
+                        'ciudad'    => $request->input('billing_city'),
+                        'pais'      => $request->input('billing_country'),
+                        'telefono'  => $request->input('billing_phone'),
+                    ]);
+                }
+    
+                Log::info('Cliente creado con ID: ' . json_encode($cliente));
+    
+                // 4. Crear la orden
+                $orden = new Orden();
+                $orden->cliente_id = $cliente->id;
+                $orden->estado = 'Pendiente';
+                $orden->fecha = now();
+                $orden->save();
+    
+                // 5. Crear la suscripción
                 $suscripcion = new Suscripcion();
                 $suscripcion->cliente_id = $cliente->id;
                 $suscripcion->membresia_id = $request->input('membresia_id');
@@ -199,10 +210,7 @@ class SubscriptionController extends Controller
                     'token'   => $tokenData['token']
                 ]);
             } else {
-                // Error en la tokenización, actualizar la orden a 'Rechazado'
-                $orden->estado = 'Rechazado';
-                $orden->save();
-    
+                // Error en la tokenización, no se crea el cliente ni otros registros
                 return response()->json([
                     'status'  => 'failed',
                     'message' => 'Error al tokenizar la tarjeta. Intente nuevamente.'
@@ -214,6 +222,7 @@ class SubscriptionController extends Controller
             return response()->json(['status' => 'failed', 'message' => 'Error interno. Intente nuevamente.'], 500);
         }
     }
+    
     
 
 
