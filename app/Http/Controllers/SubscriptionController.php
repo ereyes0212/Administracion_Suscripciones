@@ -296,6 +296,8 @@ class SubscriptionController extends Controller
 
         $responseData = $response->json();
 
+        Log::info('Datos completos de la transacción:', $responseData);
+
         // Verificamos si la respuesta fue exitosa
         if ($responseData['success'] === true) {
             // Si el pago fue exitoso, retornamos el token de la transacción
