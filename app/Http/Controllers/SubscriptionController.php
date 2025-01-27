@@ -352,6 +352,9 @@ class SubscriptionController extends Controller
         $response = Http::withHeaders($headers)->post($url, $data);
     
         $responseData = $response->json();
+
+        log(''. json_encode('RESPONSEEEEEEEEEEEE'));
+        log(''. json_encode($responseData));
     
         // Verificamos si la tokenización fue exitosa
         if ($responseData['success'] === true) {
