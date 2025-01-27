@@ -261,7 +261,8 @@ class SubscriptionController extends Controller
         $headers = [
             'x-auth-key' => '1234567890',
             'x-auth-hash' => '36cdf8271723276cb6f94904f8bde4b6',
-            'Content-Type' => 'application/json', // Agregado para indicar que los datos se envían en JSON
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json', // Esto asegura que la respuesta sea tratada como JSON
         ];
     
         $data = [
@@ -288,7 +289,18 @@ class SubscriptionController extends Controller
         $response = Http::withHeaders($headers)->post($url, $data);
     
         Log::error('Respuesta recibida de PixelPay', ['response' => $response->body()]);
-    
+        $responseBody = $response->body();
+
+        // Verificar si el cuerpo de la respuesta contiene HTML
+        if (strpos($responseBody, '<html>') !== false) {
+            Log::error('Respuesta inesperada en HTML', ['response' => $responseBody]);
+            return [
+                'status' => 'failed',
+                'message' => 'Error inesperado. Respuesta HTML recibida.',
+                'errors' => []
+            ];
+        }
+        
         $responseData = $response->json();
     
         Log::error('Respuesta JSON de la transacción', $responseData ?? []);
