@@ -24,6 +24,7 @@ class Suscripcion extends Model
         'fecha_inicio',
         'fecha_ultimo_pago',
         'fecha_renovacion',
+        'fecha_finalizacion',  // Nueva columna agregada
     ];
 
     public function cliente()

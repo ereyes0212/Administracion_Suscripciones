@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class suscripciones extends Migration
+class Suscripciones extends Migration
 {
     public function up(): void
     {
@@ -18,6 +18,7 @@ class suscripciones extends Migration
             $table->timestamp('fecha_inicio')->useCurrent();
             $table->timestamp('fecha_ultimo_pago')->nullable();
             $table->timestamp('fecha_renovacion')->nullable();
+            $table->timestamp('fecha_finalizacion')->nullable();  // Nueva columna que permite valores NULL
             $table->timestamps();
     
             // Definición de claves foráneas
@@ -25,9 +26,7 @@ class suscripciones extends Migration
             $table->foreign('membresia_id')->references('id')->on('membresias')->onDelete('set null');
         });
     }
-    
-    
-    
+
     public function down(): void
     {
         Schema::dropIfExists('suscripciones');

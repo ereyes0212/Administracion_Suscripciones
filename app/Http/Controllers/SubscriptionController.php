@@ -97,7 +97,6 @@ class SubscriptionController extends Controller
 
     public function procesarPago(Request $request)
     {
-        try {
             Log::info('Datos recibidos en la solicitud:', $request->all());
 
             // Validar los datos recibidos
@@ -261,10 +260,7 @@ class SubscriptionController extends Controller
                     'errors'  => $response['errors'] 
                 ], 400);
             }
-        } catch (Exception $e) {
-            Log::error("Error al procesar el pago: " . $e->getMessage());
-            return response()->json(['status' => 'failed', 'message' => 'Error interno. Intente nuevamente.'], 500);
-        }
+        
     }
 
 
