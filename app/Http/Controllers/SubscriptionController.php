@@ -254,7 +254,6 @@ class SubscriptionController extends Controller
 
 
 
-
     private function procesarPagoConBancoLocal($request)
     {
         $url = 'https://pixel-pay.com/api/v2/transaction/sale';
@@ -284,59 +283,44 @@ class SubscriptionController extends Controller
             'lang' => 'es',
         ];
     
-        Log::info('Iniciando solicitud de pago a PixelPay', [
-            'url' => $url,
-            'data' => $data
-        ]);
+        // Log de la solicitud enviada
+        Log::info('Solicitud enviada a PixelPay', ['url' => $url, 'data' => $data]);
     
         // Realizar la solicitud a la API de PixelPay
         $response = Http::withHeaders($headers)->post($url, $data);
     
-        if ($response->failed()) {
-            Log::error('Error al procesar el pago. Respuesta HTTP fallida', [
-                'status' => $response->status(),
-                'body' => $response->body()
-            ]);
+        // Log de la respuesta completa (como string para evitar problemas con estructuras complejas)
+        Log::info('Respuesta recibida de PixelPay', ['response' => $response->body()]);
     
-            return [
-                'status' => 'failed',
-                'message' => 'Error al procesar el pago con el banco',
-                'errors' => null,
-            ];
-        }
-    
+        // Convertir la respuesta a JSON
         $responseData = $response->json();
     
-        Log::info('Respuesta recibida de PixelPay', [
-            'response' => $responseData
-        ]);
+        // Log de la respuesta convertida a JSON
+        Log::info('Respuesta JSON de la transacción', $responseData);
     
         // Verificamos si la respuesta fue exitosa
-        if ($responseData['success'] === true) {
-            Log::info('Pago exitoso procesado con PixelPay', [
-                'order_id' => $data['order_id'],
-                'transaction_token' => $responseData['data']['payment_uuid']
-            ]);
-    
+        if (isset($responseData['success']) && $responseData['success'] === true) {
+            Log::info('Pago exitoso', ['payment_uuid' => $responseData['data']['payment_uuid'] ?? 'N/A']);
+            
             return [
                 'status' => 'success',
                 'message' => 'Pago realizado exitosamente',
-                'token' => $responseData['data']['payment_uuid'], // Usamos el UUID como token
+                'token' => $responseData['data']['payment_uuid'] ?? null, // Usamos el UUID como token
             ];
         } else {
-            Log::warning('Pago fallido en PixelPay', [
-                'order_id' => $data['order_id'],
-                'message' => $responseData['message'],
-                'errors' => $responseData['errors'] ?? 'No se proporcionaron detalles de error'
+            Log::warning('Pago fallido', [
+                'message' => $responseData['message'] ?? 'Error desconocido',
+                'errors' => $responseData['errors'] ?? null,
             ]);
     
             return [
                 'status' => 'failed',
-                'message' => $responseData['message'], // Mensaje de error general
+                'message' => $responseData['message'] ?? 'Error desconocido', // Mensaje de error general
                 'errors' => $responseData['errors'] ?? null, // Detalles del error (estado, país, etc.)
             ];
         }
     }
+    
     
 
 
