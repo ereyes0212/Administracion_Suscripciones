@@ -167,12 +167,7 @@ class SubscriptionController extends Controller
 
         // 1. Procesar el pago con el banco local primero
         $response = $this->procesarPagoConBancoLocal($request);
-        log('' . json_encode("responseeeeeeeeeeeeeeeee"));
-        log('' . json_encode($response));
-
         if ($response['status'] !== 'success') {
-            log('' . json_encode('RESPONSEEEEEEEEEEEE'));
-            // Si el pago falla, retornamos los errores específicos.
             return response()->json([
                 'success' => false,
                 'message' => $response['message'],
@@ -263,12 +258,12 @@ class SubscriptionController extends Controller
     private function procesarPagoConBancoLocal($request)
     {
         $url = 'https://pixel-pay.com/api/v2/transaction/sale';
-
+    
         $headers = [
             'x-auth-key' => '1234567890',
             'x-auth-hash' => '36cdf8271723276cb6f94904f8bde4b6',
         ];
-
+    
         // Datos para la transacción
         $data = [
             'customer_name' => $request->input('customer_name'),
@@ -288,27 +283,53 @@ class SubscriptionController extends Controller
             'env' => 'sandbox',
             'lang' => 'es',
         ];
-
-        Log::info('Datos completos de la transacción:', $data);
-
+    
+        Log::info('Iniciando solicitud de pago a PixelPay', [
+            'url' => $url,
+            'data' => $data
+        ]);
+    
         // Realizar la solicitud a la API de PixelPay
         $response = Http::withHeaders($headers)->post($url, $data);
-
-        Log::info( $response);
+    
+        if ($response->failed()) {
+            Log::error('Error al procesar el pago. Respuesta HTTP fallida', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+    
+            return [
+                'status' => 'failed',
+                'message' => 'Error al procesar el pago con el banco',
+                'errors' => null,
+            ];
+        }
+    
         $responseData = $response->json();
-        Log::info('json de la transacción:', $responseData);
-
-
+    
+        Log::info('Respuesta recibida de PixelPay', [
+            'response' => $responseData
+        ]);
+    
         // Verificamos si la respuesta fue exitosa
         if ($responseData['success'] === true) {
-            // Si el pago fue exitoso, retornamos el token de la transacción
+            Log::info('Pago exitoso procesado con PixelPay', [
+                'order_id' => $data['order_id'],
+                'transaction_token' => $responseData['data']['payment_uuid']
+            ]);
+    
             return [
                 'status' => 'success',
                 'message' => 'Pago realizado exitosamente',
                 'token' => $responseData['data']['payment_uuid'], // Usamos el UUID como token
             ];
         } else {
-            // Si el pago falló, retornamos el error y los detalles
+            Log::warning('Pago fallido en PixelPay', [
+                'order_id' => $data['order_id'],
+                'message' => $responseData['message'],
+                'errors' => $responseData['errors'] ?? 'No se proporcionaron detalles de error'
+            ]);
+    
             return [
                 'status' => 'failed',
                 'message' => $responseData['message'], // Mensaje de error general
@@ -316,6 +337,7 @@ class SubscriptionController extends Controller
             ];
         }
     }
+    
 
 
     private function tokenizarTarjeta($request)
@@ -347,9 +369,6 @@ class SubscriptionController extends Controller
         $response = Http::withHeaders($headers)->post($url, $data);
 
         $responseData = $response->json();
-
-        log('' . json_encode('RESPONSEEEEEEEEEEEE'));
-        log('' . json_encode($responseData));
 
         // Verificamos si la tokenización fue exitosa
         if ($responseData['success'] === true) {
