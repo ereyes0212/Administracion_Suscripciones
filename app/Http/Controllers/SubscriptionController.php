@@ -99,22 +99,22 @@ class SubscriptionController extends Controller
     {
         try {
             Log::info('Datos recibidos en la solicitud:', $request->all());
-    
+
             // Validar los datos recibidos
             try {
                 $validatedData = $request->validate([
                     'order_id'        => 'required|alpha_num', // Alfanumérico requerido
                     'order_currency'  => 'required|in:USD,HNL,NIO|size:3', // Solo USD, HNL o NIO, exactamente 3 caracteres en mayúscula
                     'order_amount'    => 'required|numeric|min:0', // Número decimal requerido
-            
+
                     'customer_name'   => 'required|string|min:3|max:120', // Mínimo 3, máximo 120 caracteres
                     'customer_email'  => 'required|email', // Formato de correo válido
-            
+
                     'billing_address' => 'required|string', // Texto corto requerido
                     'billing_state'   => 'required|string', // Texto corto requerido
                     'billing_country' => 'required|string', // Texto corto, entre 3 y 15 caracteres
                     'billing_phone'   => 'required|digits:8', // Exactamente 8 caracteres numéricos
-            
+
                     'card_number'     => 'required|digits:16', // Exactamente 16 caracteres numéricos
                     'card_holder'     => 'required|string|min:3|max:120', // Texto corto, mínimo 3, máximo 120 caracteres
                     'card_cvv'        => 'required|digits_between:3,4', // Numérico, entre 3 y 4 caracteres
@@ -129,92 +129,89 @@ class SubscriptionController extends Controller
                     'order_amount.required' => 'El monto de la orden es obligatorio.',
                     'order_amount.numeric' => 'El monto de la orden debe ser un número.',
                     'order_amount.min' => 'El monto de la orden no puede ser menor a 0.',
-                    
+
                     'customer_name.required' => 'El nombre del cliente es obligatorio.',
                     'customer_name.string' => 'El nombre del cliente debe ser un texto.',
                     'customer_name.min' => 'El nombre del cliente debe tener al menos 3 caracteres.',
                     'customer_name.max' => 'El nombre del cliente no puede tener más de 120 caracteres.',
-                    
+
                     'customer_email.required' => 'El correo electrónico es obligatorio.',
                     'customer_email.email' => 'El correo electrónico debe ser válido.',
-                    
+
                     'billing_address.required' => 'La dirección de facturación es obligatoria.',
                     'billing_address.string' => 'La dirección de facturación debe ser un texto.',
-                    
+
                     'billing_state.required' => 'El estado de facturación es obligatorio.',
                     'billing_state.string' => 'El estado de facturación debe ser un texto.',
-                    
+
                     'billing_country.required' => 'El país de facturación es obligatorio.',
                     'billing_country.string' => 'El país de facturación debe ser un texto.',
-                    
+
                     'billing_phone.required' => 'El teléfono de facturación es obligatorio.',
                     'billing_phone.digits' => 'El teléfono de facturación debe tener exactamente 8 dígitos.',
-                    
+
                     'card_number.required' => 'El número de la tarjeta es obligatorio.',
                     'card_number.digits' => 'El número de la tarjeta debe tener exactamente 16 dígitos.',
-                    
+
                     'card_holder.required' => 'El titular de la tarjeta es obligatorio.',
                     'card_holder.string' => 'El titular de la tarjeta debe ser un texto.',
                     'card_holder.min' => 'El titular de la tarjeta debe tener al menos 3 caracteres.',
                     'card_holder.max' => 'El titular de la tarjeta no puede tener más de 120 caracteres.',
-                    
+
                     'card_cvv.required' => 'El CVV de la tarjeta es obligatorio.',
                     'card_cvv.digits_between' => 'El CVV debe tener entre 3 y 4 dígitos.',
-                    
+
                     'card_expire.required' => 'La fecha de vencimiento de la tarjeta es obligatoria.',
                     'card_expire.digits' => 'La fecha de vencimiento debe tener exactamente 4 dígitos.',
                 ]);
             } catch (ValidationException $e) {
                 Log::error('Errores de validación:', $e->errors());  // Registrar los errores en el log
-            
+
                 return response()->json([
                     'status'  => 'failed',
                     'message' => 'Errores de validación',
                     'errors'  => $e->errors()  // Devuelve los campos que no cumplen con la validación
                 ], 422);
             }
-            
-            
-    
+
+
+
             // 1. Procesar el pago con el banco local primero
             $response = $this->procesarPagoConBancoLocal($request);
-    
+
             if ($response['status'] !== 'success') {
-                // Si el pago falla, no crear registros y retornar error
+                // Si el pago falla, retornamos los errores específicos.
                 return response()->json([
-                    'status'  => 'failed',
-                    'message' => 'Hubo un error al procesar el pago. Intente nuevamente.'
+                    'success' => false,
+                    'message' => $response['message'],
+                    'errors'  => $response['errors'] 
                 ], 400);
             }
-    
-            // 2. Tokenizar la tarjeta después del pago exitoso
+
+            $cliente = Cliente::where('correo', $request->input('customer_email'))->first();
+
+            if (!$cliente) {
+                $cliente = Cliente::create([
+                    'nombre'    => $request->input('customer_name'),
+                    'correo'    => $request->input('customer_email'),
+                    'direccion' => $request->input('billing_address'),
+                    'ciudad'    => $request->input('billing_city'),
+                    'pais'      => $request->input('billing_country'),
+                    'telefono'  => $request->input('billing_phone'),
+                ]);
+            }
+
+            Log::info('Cliente creado con ID: ' . json_encode($cliente));
+            // 4. Crear la orden
+            $orden = new Orden();
+            $orden->cliente_id = $cliente->id;
+            $orden->estado = 'Pendiente';
+            $orden->fecha = now();
+            $orden->save();
             $tokenData = $this->tokenizarTarjeta($request);
-    
+
             if ($tokenData['status'] === 'success') {
-                // 3. Buscar o crear cliente solo después de tokenizar exitosamente
-                $cliente = Cliente::where('correo', $request->input('customer_email'))->first();
-    
-                if (!$cliente) {
-                    $cliente = Cliente::create([
-                        'nombre'    => $request->input('customer_name'),
-                        'correo'    => $request->input('customer_email'),
-                        'direccion' => $request->input('billing_address'),
-                        'ciudad'    => $request->input('billing_city'),
-                        'pais'      => $request->input('billing_country'),
-                        'telefono'  => $request->input('billing_phone'),
-                    ]);
-                }
-    
-                Log::info('Cliente creado con ID: ' . json_encode($cliente));
-    
-                // 4. Crear la orden
-                $orden = new Orden();
-                $orden->cliente_id = $cliente->id;
-                $orden->estado = 'Pendiente';
-                $orden->fecha = now();
-                $orden->save();
-    
-                // 5. Crear la suscripción
+
                 $suscripcion = new Suscripcion();
                 $suscripcion->cliente_id = $cliente->id;
                 $suscripcion->membresia_id = $request->input('membresia_id');
@@ -223,7 +220,7 @@ class SubscriptionController extends Controller
                 $suscripcion->estado = 'Activo';
                 $suscripcion->fecha_inicio = now();
                 $suscripcion->fecha_ultimo_pago = now();
-    
+
                 // Definir fecha de renovación según la recurrencia
                 switch ($request->input('recurrence')) {
                     case 'Diario':
@@ -242,15 +239,15 @@ class SubscriptionController extends Controller
                         $suscripcion->fecha_renovacion = now()->addMonth();
                         break;
                 }
-    
+
                 $suscripcion->save();
-    
+
                 // Actualizar la orden a "Pagado"
                 $orden->estado = 'Pagado';
                 $orden->suscripcion_id = $suscripcion->id;
                 $orden->orden_id_wp = $request->input('order_id');
                 $orden->save();
-    
+
                 return response()->json([
                     'status'  => 'success',
                     'message' => 'Pago procesado con éxito, suscripción guardada y orden marcada como pagada.',
@@ -259,18 +256,18 @@ class SubscriptionController extends Controller
             } else {
                 // Error en la tokenización, no se crea el cliente ni otros registros
                 return response()->json([
-                    'status'  => 'failed',
-                    'message' => 'Error al tokenizar la tarjeta. Intente nuevamente.'
+                    'success' => false,
+                    'message' => $response['message'],
+                    'errors'  => $response['errors'] 
                 ], 400);
             }
-    
         } catch (Exception $e) {
             Log::error("Error al procesar el pago: " . $e->getMessage());
             return response()->json(['status' => 'failed', 'message' => 'Error interno. Intente nuevamente.'], 500);
         }
     }
-    
-    
+
+
 
 
 
@@ -278,12 +275,12 @@ class SubscriptionController extends Controller
     private function procesarPagoConBancoLocal($request)
     {
         $url = 'https://pixel-pay.com/api/v2/transaction/sale';
-
+    
         $headers = [
             'x-auth-key' => '1234567890',
             'x-auth-hash' => '36cdf8271723276cb6f94904f8bde4b6',
         ];
-
+    
         // Datos para la transacción
         $data = [
             'customer_name' => $request->input('customer_name'),
@@ -303,44 +300,42 @@ class SubscriptionController extends Controller
             'env' => 'sandbox',
             'lang' => 'es',
         ];
+    
         Log::info('Datos completos de la transacción:', $data);
-
-
-
+    
+        // Realizar la solicitud a la API de PixelPay
         $response = Http::withHeaders($headers)->post($url, $data);
-
+    
         $responseData = $response->json();
-
+    
         // Verificamos si la respuesta fue exitosa
         if ($responseData['success'] === true) {
+            // Si el pago fue exitoso, retornamos el token de la transacción
             return [
                 'status' => 'success',
                 'message' => 'Pago realizado exitosamente',
                 'token' => $responseData['data']['payment_uuid'], // Usamos el UUID como token
             ];
         } else {
-            // Log de error
-            Log::error('Error en la transacción', [
-                'request' => $data,
-                'response' => $responseData,
-            ]);
-
+            // Si el pago falló, retornamos el error y los detalles
             return [
                 'status' => 'failed',
-                'message' => 'Error en la transacción: ' . $responseData['message'],
+                'message' => $responseData['message'], // Mensaje de error general
+                'errors' => $responseData['errors'], // Detalles del error (estado, país, etc.)
             ];
         }
     }
+    
 
     private function tokenizarTarjeta($request)
     {
         $url = 'https://pixel-pay.com/api/v2/tokenization/card';
-
+    
         $headers = [
             'x-auth-key' => '1234567890',
             'x-auth-hash' => '36cdf8271723276cb6f94904f8bde4b6',
         ];
-
+    
         // Datos para tokenizar la tarjeta
         $data = [
             'cvv2' => $request->input('card_cvv'),
@@ -357,11 +352,11 @@ class SubscriptionController extends Controller
             'lang' => 'es',
             'env' => 'sandbox',
         ];
-
+    
         $response = Http::withHeaders($headers)->post($url, $data);
-
+    
         $responseData = $response->json();
-
+    
         // Verificamos si la tokenización fue exitosa
         if ($responseData['success'] === true) {
             return [
@@ -370,16 +365,13 @@ class SubscriptionController extends Controller
                 'token' => $responseData['data']['token'], // Retornamos el token de la tarjeta
             ];
         } else {
-            // Log de error
-            Log::error('Error al tokenizar la tarjeta', [
-                'request' => $data,
-                'response' => $responseData,
-            ]);
-
+            // Si la tokenización falla, retornamos los detalles del error
             return [
                 'status' => 'failed',
-                'message' => 'Error al tokenizar la tarjeta: ' . $responseData['message'],
+                'message' => $responseData['message'], // Mensaje de error general
+                'errors' => $responseData['errors'], // Detalles del error (como el campo cvv2)
             ];
         }
     }
+    
 }
