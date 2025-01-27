@@ -20,6 +20,7 @@ class Orden extends Model
         'suscripcion_id',
         'orden_id_wp',
         'estado',
+        'tipo', // Nuevo campo agregado
         'fecha',
     ];
 

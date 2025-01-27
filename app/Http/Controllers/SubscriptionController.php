@@ -98,73 +98,73 @@ class SubscriptionController extends Controller
     public function procesarPago(Request $request)
     {
         Log::info('Datos recibidos en la solicitud:', $request->all());
-
+    
         // Validar los datos recibidos
-
-            $validatedData = $request->validate([
-                'order_id'        => 'required|alpha_num', // Alfanumérico requerido
-                'order_currency'  => 'required|in:USD,HNL,NIO|size:3', // Solo USD, HNL o NIO, exactamente 3 caracteres en mayúscula
-                'order_amount'    => 'required|numeric|min:0', // Número decimal requerido
-
-                'customer_name'   => 'required|string|min:3|max:120', // Mínimo 3, máximo 120 caracteres
-                'customer_email'  => 'required|email', // Formato de correo válido
-
-                'billing_address' => 'required|string', // Texto corto requerido
-                'billing_state'   => 'required|string', // Texto corto requerido
-                'billing_country' => 'required|string', // Texto corto, entre 3 y 15 caracteres
-                'billing_phone'   => 'required|digits:8', // Exactamente 8 caracteres numéricos
-
-                'card_number'     => 'required|digits:16', // Exactamente 16 caracteres numéricos
-                'card_holder'     => 'required|string|min:3|max:120', // Texto corto, mínimo 3, máximo 120 caracteres
-                'card_cvv'        => 'required|digits_between:3,4', // Numérico, entre 3 y 4 caracteres
-                'card_expire'     => 'required|digits:4', // Exactamente 4 caracteres numéricos
-            ], [
-                // Mensajes de error personalizados en español
-                'order_id.required' => 'El ID de la orden es obligatorio.',
-                'order_id.alpha_num' => 'El ID de la orden debe ser alfanumérico.',
-                'order_currency.required' => 'La moneda es obligatoria.',
-                'order_currency.in' => 'La moneda debe ser USD, HNL o NIO.',
-                'order_currency.size' => 'La moneda debe tener exactamente 3 caracteres.',
-                'order_amount.required' => 'El monto de la orden es obligatorio.',
-                'order_amount.numeric' => 'El monto de la orden debe ser un número.',
-                'order_amount.min' => 'El monto de la orden no puede ser menor a 0.',
-
-                'customer_name.required' => 'El nombre del cliente es obligatorio.',
-                'customer_name.string' => 'El nombre del cliente debe ser un texto.',
-                'customer_name.min' => 'El nombre del cliente debe tener al menos 3 caracteres.',
-                'customer_name.max' => 'El nombre del cliente no puede tener más de 120 caracteres.',
-
-                'customer_email.required' => 'El correo electrónico es obligatorio.',
-                'customer_email.email' => 'El correo electrónico debe ser válido.',
-
-                'billing_address.required' => 'La dirección de facturación es obligatoria.',
-                'billing_address.string' => 'La dirección de facturación debe ser un texto.',
-
-                'billing_state.required' => 'El estado de facturación es obligatorio.',
-                'billing_state.string' => 'El estado de facturación debe ser un texto.',
-
-                'billing_country.required' => 'El país de facturación es obligatorio.',
-                'billing_country.string' => 'El país de facturación debe ser un texto.',
-
-                'billing_phone.required' => 'El teléfono de facturación es obligatorio.',
-                'billing_phone.digits' => 'El teléfono de facturación debe tener exactamente 8 dígitos.',
-
-                'card_number.required' => 'El número de la tarjeta es obligatorio.',
-                'card_number.digits' => 'El número de la tarjeta debe tener exactamente 16 dígitos.',
-
-                'card_holder.required' => 'El titular de la tarjeta es obligatorio.',
-                'card_holder.string' => 'El titular de la tarjeta debe ser un texto.',
-                'card_holder.min' => 'El titular de la tarjeta debe tener al menos 3 caracteres.',
-                'card_holder.max' => 'El titular de la tarjeta no puede tener más de 120 caracteres.',
-
-                'card_cvv.required' => 'El CVV de la tarjeta es obligatorio.',
-                'card_cvv.digits_between' => 'El CVV debe tener entre 3 y 4 dígitos.',
-
-                'card_expire.required' => 'La fecha de vencimiento de la tarjeta es obligatoria.',
-                'card_expire.digits' => 'La fecha de vencimiento debe tener exactamente 4 dígitos.',
-            ]);
-
-
+    
+        $validatedData = $request->validate([
+            'order_id'        => 'required|alpha_num', // Alfanumérico requerido
+            'order_currency'  => 'required|in:USD,HNL,NIO|size:3', // Solo USD, HNL o NIO, exactamente 3 caracteres en mayúscula
+            'order_amount'    => 'required|numeric|min:0', // Número decimal requerido
+    
+            'customer_name'   => 'required|string|min:3|max:120', // Mínimo 3, máximo 120 caracteres
+            'customer_email'  => 'required|email', // Formato de correo válido
+    
+            'billing_address' => 'required|string', // Texto corto requerido
+            'billing_state'   => 'required|string', // Texto corto requerido
+            'billing_country' => 'required|string', // Texto corto, entre 3 y 15 caracteres
+            'billing_phone'   => 'required|digits:8', // Exactamente 8 caracteres numéricos
+    
+            'card_number'     => 'required|digits:16', // Exactamente 16 caracteres numéricos
+            'card_holder'     => 'required|string|min:3|max:120', // Texto corto, mínimo 3, máximo 120 caracteres
+            'card_cvv'        => 'required|digits_between:3,4', // Numérico, entre 3 y 4 caracteres
+            'card_expire'     => 'required|digits:4', // Exactamente 4 caracteres numéricos
+        ], [
+            // Mensajes de error personalizados en español
+            'order_id.required' => 'El ID de la orden es obligatorio.',
+            'order_id.alpha_num' => 'El ID de la orden debe ser alfanumérico.',
+            'order_currency.required' => 'La moneda es obligatoria.',
+            'order_currency.in' => 'La moneda debe ser USD, HNL o NIO.',
+            'order_currency.size' => 'La moneda debe tener exactamente 3 caracteres.',
+            'order_amount.required' => 'El monto de la orden es obligatorio.',
+            'order_amount.numeric' => 'El monto de la orden debe ser un número.',
+            'order_amount.min' => 'El monto de la orden no puede ser menor a 0.',
+    
+            'customer_name.required' => 'El nombre del cliente es obligatorio.',
+            'customer_name.string' => 'El nombre del cliente debe ser un texto.',
+            'customer_name.min' => 'El nombre del cliente debe tener al menos 3 caracteres.',
+            'customer_name.max' => 'El nombre del cliente no puede tener más de 120 caracteres.',
+    
+            'customer_email.required' => 'El correo electrónico es obligatorio.',
+            'customer_email.email' => 'El correo electrónico debe ser válido.',
+    
+            'billing_address.required' => 'La dirección de facturación es obligatoria.',
+            'billing_address.string' => 'La dirección de facturación debe ser un texto.',
+    
+            'billing_state.required' => 'El estado de facturación es obligatorio.',
+            'billing_state.string' => 'El estado de facturación debe ser un texto.',
+    
+            'billing_country.required' => 'El país de facturación es obligatorio.',
+            'billing_country.string' => 'El país de facturación debe ser un texto.',
+    
+            'billing_phone.required' => 'El teléfono de facturación es obligatorio.',
+            'billing_phone.digits' => 'El teléfono de facturación debe tener exactamente 8 dígitos.',
+    
+            'card_number.required' => 'El número de la tarjeta es obligatorio.',
+            'card_number.digits' => 'El número de la tarjeta debe tener exactamente 16 dígitos.',
+    
+            'card_holder.required' => 'El titular de la tarjeta es obligatorio.',
+            'card_holder.string' => 'El titular de la tarjeta debe ser un texto.',
+            'card_holder.min' => 'El titular de la tarjeta debe tener al menos 3 caracteres.',
+            'card_holder.max' => 'El titular de la tarjeta no puede tener más de 120 caracteres.',
+    
+            'card_cvv.required' => 'El CVV de la tarjeta es obligatorio.',
+            'card_cvv.digits_between' => 'El CVV debe tener entre 3 y 4 dígitos.',
+    
+            'card_expire.required' => 'La fecha de vencimiento de la tarjeta es obligatoria.',
+            'card_expire.digits' => 'La fecha de vencimiento debe tener exactamente 4 dígitos.',
+        ]);
+    
+    
         // 1. Procesar el pago con el banco local primero
         $response = $this->procesarPagoConBancoLocal($request);
         if ($response['status'] !== 'success') {
@@ -174,9 +174,9 @@ class SubscriptionController extends Controller
                 'errors'  => $response['errors'] ?? null
             ], 400);
         }
-
+    
         $cliente = Cliente::where('correo', $request->input('customer_email'))->first();
-
+    
         if (!$cliente) {
             $cliente = Cliente::create([
                 'nombre'    => $request->input('customer_name'),
@@ -187,68 +187,115 @@ class SubscriptionController extends Controller
                 'telefono'  => $request->input('billing_phone'),
             ]);
         }
-
+    
         Log::info('Cliente creado con ID: ' . json_encode($cliente));
+        
         // 4. Crear la orden
         $orden = new Orden();
         $orden->cliente_id = $cliente->id;
-        $orden->estado = 'Pendiente';
+        $orden->estado = 'Pagado';
         $orden->fecha = now();
         $orden->save();
-        $tokenData = $this->tokenizarTarjeta($request);
-
-        if ($tokenData['status'] === 'success') {
-
+        
+        // Verificar si el pago es recurrente o no
+        if ($request->input('recurring_payment')) {
+            // Si es un pago recurrente, tokenizamos la tarjeta
+            $tokenData = $this->tokenizarTarjeta($request);
+    
+            if ($tokenData['status'] === 'success') {
+    
+                $suscripcion = new Suscripcion();
+                $suscripcion->cliente_id = $cliente->id;
+                $suscripcion->membresia_id = $request->input('membresia_id');
+                $suscripcion->monto = $request->input('order_amount');
+                $suscripcion->token_pago = $tokenData['token'];
+                $suscripcion->estado = 'Activo';
+                $suscripcion->fecha_inicio = now();
+                $suscripcion->fecha_ultimo_pago = now();
+    
+                // Definir fecha de renovación según la recurrencia
+                switch ($request->input('recurrence')) {
+                    case 'Diario':
+                        $suscripcion->fecha_renovacion = now()->addDay();
+                        break;
+                    case 'Semanal':
+                        $suscripcion->fecha_renovacion = now()->addWeek();
+                        break;
+                    case 'Mensual':
+                        $suscripcion->fecha_renovacion = now()->addMonth();
+                        break;
+                    case 'Anual':
+                        $suscripcion->fecha_renovacion = now()->addYear();
+                        break;
+                    default:
+                        $suscripcion->fecha_renovacion = now()->addMonth();
+                        break;
+                }
+    
+                $suscripcion->save();
+    
+                // Actualizar la orden a "Pagado"
+                $orden->estado = 'Pagado';
+                $orden->suscripcion_id = $suscripcion->id;
+                $orden->orden_id_wp = $request->input('order_id');
+                $orden->save();
+    
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => 'Pago procesado con éxito, suscripción guardada y orden marcada como pagada.',
+                    'token'   => $tokenData['token']
+                ]);
+            } else {
+                // Error en la tokenización, no se crea el cliente ni otros registros
+                return response()->json([
+                    'success' => false,
+                    'message' => $response['message'],
+                    'errors'  => $response['errors']
+                ], 400);
+            }
+        } else {
+            // Si no es un pago recurrente, se crea la suscripción sin token y sin fecha de renovación
             $suscripcion = new Suscripcion();
             $suscripcion->cliente_id = $cliente->id;
             $suscripcion->membresia_id = $request->input('membresia_id');
             $suscripcion->monto = $request->input('order_amount');
-            $suscripcion->token_pago = $tokenData['token'];
             $suscripcion->estado = 'Activo';
             $suscripcion->fecha_inicio = now();
-            $suscripcion->fecha_ultimo_pago = now();
-
-            // Definir fecha de renovación según la recurrencia
+    
+            // Definir fecha de finalización según la recurrencia
             switch ($request->input('recurrence')) {
                 case 'Diario':
-                    $suscripcion->fecha_renovacion = now()->addDay();
+                    $suscripcion->fecha_finalizacion = now()->addDay();
                     break;
                 case 'Semanal':
-                    $suscripcion->fecha_renovacion = now()->addWeek();
+                    $suscripcion->fecha_finalizacion = now()->addWeek();
                     break;
                 case 'Mensual':
-                    $suscripcion->fecha_renovacion = now()->addMonth();
+                    $suscripcion->fecha_finalizacion = now()->addMonth();
                     break;
                 case 'Anual':
-                    $suscripcion->fecha_renovacion = now()->addYear();
+                    $suscripcion->fecha_finalizacion = now()->addYear();
                     break;
                 default:
-                    $suscripcion->fecha_renovacion = now()->addMonth();
+                    $suscripcion->fecha_finalizacion = now()->addMonth();
                     break;
             }
-
+    
             $suscripcion->save();
-
+    
             // Actualizar la orden a "Pagado"
-            $orden->estado = 'Pagado';
+
             $orden->suscripcion_id = $suscripcion->id;
             $orden->orden_id_wp = $request->input('order_id');
             $orden->save();
-
+    
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Pago procesado con éxito, suscripción guardada y orden marcada como pagada.',
-                'token'   => $tokenData['token']
+                'message' => 'Pago procesado con éxito, suscripción guardada y orden marcada como pagada.'
             ]);
-        } else {
-            // Error en la tokenización, no se crea el cliente ni otros registros
-            return response()->json([
-                'success' => false,
-                'message' => $response['message'],
-                'errors'  => $response['errors']
-            ], 400);
         }
     }
+    
 
 
 

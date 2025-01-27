@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class ordenes extends Migration
+class Ordenes extends Migration
 {
     public function up(): void
     {
@@ -14,6 +14,7 @@ class ordenes extends Migration
             $table->char('suscripcion_id', 36)->nullable();
             $table->string('orden_id_wp', 100)->nullable();
             $table->enum('estado', ['Pagado', 'Rechazado', 'Pendiente'])->default('Pendiente');
+            $table->enum('tipo', ['Contratación', 'Renovación'])->default('Contratación'); // Nuevo campo
             $table->timestamp('fecha')->useCurrent();
             $table->timestamps();
 
