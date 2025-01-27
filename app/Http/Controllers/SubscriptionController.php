@@ -294,9 +294,10 @@ class SubscriptionController extends Controller
         // Realizar la solicitud a la API de PixelPay
         $response = Http::withHeaders($headers)->post($url, $data);
 
+        Log::info( $response);
         $responseData = $response->json();
+        Log::info('json de la transacción:', $responseData);
 
-        Log::info('Datos completos de la transacción:', $responseData);
 
         // Verificamos si la respuesta fue exitosa
         if ($responseData['success'] === true) {
