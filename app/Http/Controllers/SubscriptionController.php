@@ -261,6 +261,7 @@ class SubscriptionController extends Controller
         $headers = [
             'x-auth-key' => '1234567890',
             'x-auth-hash' => '36cdf8271723276cb6f94904f8bde4b6',
+            'Content-Type' => 'application/json', // Agregado para indicar que los datos se envían en JSON
         ];
     
         $data = [
