@@ -167,13 +167,15 @@ class SubscriptionController extends Controller
 
         // 1. Procesar el pago con el banco local primero
         $response = $this->procesarPagoConBancoLocal($request);
+        log('' . json_encode($response));
 
         if ($response['status'] !== 'success') {
+            log('' . json_encode('RESPONSEEEEEEEEEEEE'));
             // Si el pago falla, retornamos los errores específicos.
             return response()->json([
                 'success' => false,
                 'message' => $response['message'],
-                'errors'  => $response['errors']
+                'errors'  => $response['errors'] ?? null
             ], 400);
         }
 
