@@ -30,7 +30,8 @@
                         <th>Nombre</th>
                         <th>Correo</th>
                         <th>Dirección</th>
-                        <th>Coidad</th>
+                        <th>Ciudad</th>
+                        <th>País</th>
                         <th>Telefono</th>
                     </tr>
                 </thead>
@@ -41,6 +42,7 @@
                         <td>{{ $cliente->correo }}</td>
                         <td>{{ $cliente->direccion }}</td>
                         <td>{{ $cliente->ciudad }}</td>
+                        <td>{{ $cliente->pais }}</td>
                         <td>{{ $cliente->telefono }}</td>
 {{-- 
                         <td style="text-align: end">

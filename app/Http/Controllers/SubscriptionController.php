@@ -195,6 +195,20 @@ class SubscriptionController extends Controller
         $orden->cliente_id = $cliente->id;
         $orden->estado = 'Pagado';
         $orden->fecha = now();
+        
+        // Verificar si el cliente ya tiene una suscripción activa
+        $suscripcionActiva = Suscripcion::where('cliente_id', $cliente->id)
+            ->where('estado', 'Activo')
+            ->first();
+        
+        if ($suscripcionActiva) {
+            // Es una renovación, si ya existe una suscripción activa
+            $orden->tipo = 'Renovación';
+        } else {
+            // Es una nueva contratación
+            $orden->tipo = 'Contratación';
+        }
+        
         $orden->save();
         
         // Verificar si el pago es recurrente o no

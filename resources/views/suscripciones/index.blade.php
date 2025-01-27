@@ -27,11 +27,12 @@
             <table id="table" class="display">
                 <thead>
                     <tr>
-                        <th>Nombre</th>
+                        <th>Cliente</th>
                         <th>Monto</th>
                         <th>Recurrencia</th>
                         <th>Fecha de inicio</th>
                         <th>Renovación</th>
+                        <th>Fecha de finalización</th>
                         <th>Estado</th>
                     </tr>
                 </thead>
@@ -43,6 +44,7 @@
                         <td>{{ $suscripcion->membresia->tipo_recurrencia }}</td>
                         <td>{{ $suscripcion->fecha_inicio }}</td>
                         <td>{{ $suscripcion->fecha_renovacion }}</td>
+                        <td>{{ $suscripcion->fecha_finalizacion }}</td>
                         <td>{{ $suscripcion->estado }}</td>
 {{-- 
                         <td style="text-align: end">
