@@ -263,7 +263,6 @@ class SubscriptionController extends Controller
             'x-auth-hash' => '36cdf8271723276cb6f94904f8bde4b6',
         ];
     
-        // Datos para la transacción
         $data = [
             'customer_name' => $request->input('customer_name'),
             'card_number' => $request->input('card_number'),
@@ -283,43 +282,39 @@ class SubscriptionController extends Controller
             'lang' => 'es',
         ];
     
-        // Log de la solicitud enviada
-        Log::info('Solicitud enviada a PixelPay', ['url' => $url, 'data' => $data]);
+        Log::error('Solicitud enviada a PixelPay', ['url' => $url, 'data' => $data]);
     
-        // Realizar la solicitud a la API de PixelPay
         $response = Http::withHeaders($headers)->post($url, $data);
     
-        // Log de la respuesta completa (como string para evitar problemas con estructuras complejas)
-        Log::info('Respuesta recibida de PixelPay', ['response' => $response->body()]);
+        Log::error('Respuesta recibida de PixelPay', ['response' => $response->body()]);
     
-        // Convertir la respuesta a JSON
         $responseData = $response->json();
     
-        // Log de la respuesta convertida a JSON
-        Log::info('Respuesta JSON de la transacción', $responseData);
+        Log::error('Respuesta JSON de la transacción', $responseData ?? []);
     
-        // Verificamos si la respuesta fue exitosa
         if (isset($responseData['success']) && $responseData['success'] === true) {
-            Log::info('Pago exitoso', ['payment_uuid' => $responseData['data']['payment_uuid'] ?? 'N/A']);
-            
+            Log::error('Pago exitoso', ['payment_uuid' => $responseData['data']['payment_uuid'] ?? 'N/A']);
+    
             return [
                 'status' => 'success',
                 'message' => 'Pago realizado exitosamente',
-                'token' => $responseData['data']['payment_uuid'] ?? null, // Usamos el UUID como token
+                'token' => $responseData['data']['payment_uuid'] ?? null,
             ];
         } else {
-            Log::warning('Pago fallido', [
+            Log::error('Pago fallido', [
                 'message' => $responseData['message'] ?? 'Error desconocido',
-                'errors' => $responseData['errors'] ?? null,
+                'errors' => $responseData['errors'] ?? [],
             ]);
     
             return [
                 'status' => 'failed',
-                'message' => $responseData['message'] ?? 'Error desconocido', // Mensaje de error general
-                'errors' => $responseData['errors'] ?? null, // Detalles del error (estado, país, etc.)
+                'message' => $responseData['message'] ?? 'Error desconocido',
+                'errors' => $responseData['errors'] ?? [],
             ];
         }
     }
+    
+    
     
     
 
