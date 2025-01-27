@@ -317,7 +317,7 @@ class SubscriptionController extends Controller
             return [
                 'status' => 'failed',
                 'message' => $responseData['message'], // Mensaje de error general
-                'errors' => $responseData['errors'], // Detalles del error (estado, país, etc.)
+                'errors' => $responseData['errors'] ?? null, // Detalles del error (estado, país, etc.)
             ];
         }
     }
@@ -365,7 +365,7 @@ class SubscriptionController extends Controller
             return [
                 'status' => 'failed',
                 'message' => $responseData['message'], // Mensaje de error general
-                'errors' => $responseData['errors'], // Detalles del error (como el campo cvv2)
+                'errors' => $responseData['errors'] ?? null, // Detalles del error (estado, país, etc.)
             ];
         }
     }
