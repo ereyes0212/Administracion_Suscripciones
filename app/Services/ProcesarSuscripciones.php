@@ -12,22 +12,29 @@ class ProcesarSuscripciones
 {
     public function procesar()
     {
-        Log::info('Iniciando el procesamiento de suscripciones...');
-    
         try {
-            // Obtén todas las suscripciones activas
-            $suscripciones = Suscripcion::where('estado', 'Activo')
-            ->whereDate('fecha_renovacion', Carbon::today()) // Compara solo la fecha sin hora
-            ->with('cliente')
-            ->get();
-            
-            Log::info('Total de suscripciones activas encontradas: ' . $suscripciones->count());
-            Log::info($suscripciones);
+            // Obtén todas las suscripciones activas con fecha de renovación (recurrentes)
+            $suscripcionesRecurrentes = Suscripcion::where('estado', 'Activo')
+                ->whereDate('fecha_renovacion', Carbon::today()) // Compara solo la fecha sin hora
+                ->with('cliente')
+                ->get();
     
-            foreach ($suscripciones as $suscripcion) {
-
-
-                    $orderId = $this->obtenerOrderId($suscripcion->token_pago);
+            // Obtén todas las suscripciones activas con fecha de finalización (no recurrentes)
+            $suscripcionesNoRecurrentes = Suscripcion::where('estado', 'Activo')
+                ->whereDate('fecha_finalizacion', Carbon::today()) // Compara solo la fecha sin hora
+                ->with('cliente')
+                ->get();
+    
+            Log::info('Total de suscripciones recurrentes encontradas: ' . $suscripcionesRecurrentes->count());
+            Log::info('Total de suscripciones no recurrentes encontradas: ' . $suscripcionesNoRecurrentes->count());
+    
+            // Procesar suscripciones recurrentes
+            foreach ($suscripcionesRecurrentes as $suscripcion) {
+                $orderId = $this->obtenerOrderId($suscripcion->token_pago);
+    
+                if ($orderId) {
+                    $resultado = $this->procesarPago($suscripcion, $orderId);
+    
                     $orden = new Orden();
                     $orden->cliente_id = $suscripcion->cliente_id;
                     $orden->suscripcion_id = $suscripcion->id;
@@ -35,29 +42,32 @@ class ProcesarSuscripciones
                     $orden->estado = 'Pendiente';
                     $orden->fecha = now()->format('Y-m-d H:i:s');
                     $orden->save();
-
-
-
-                    if ($orderId) {
-                        // Procesar el pago
-                        $resultado = $this->procesarPago($suscripcion, $orderId);
     
-                        if ($resultado['status'] === 'success') {
-                            $orden->estado = 'Pagado';
-                            $this->actualizarFechaRenovacion($suscripcion); // Actualiza la fecha de renovación
-                            $this->enviarWebhook($orderId, 'paid');
-                            Log::info("Pago procesado exitosamente para la suscripción ID: {$suscripcion->id}");
-                        } else {
-                            $orden->estado = 'Rechazado';
-                            $this->enviarWebhook($orderId, 'failed');
-                            $suscripcion->estado = 'inactivo';
-                            $suscripcion->save();
-                            Log::warning("Fallo al procesar el pago para la suscripción ID: {$suscripcion->id}");
-                        }
-                        $orden->save();
+                    if ($resultado['status'] === 'success') {
+                        $orden->estado = 'Pagado';
+                        $this->actualizarFechaRenovacion($suscripcion); // Actualiza la fecha de renovación
+                        $this->enviarWebhook($orderId, 'paid');
+                        Log::info("Pago procesado exitosamente para la suscripción ID: {$suscripcion->id}");
                     } else {
-                        Log::error("No se pudo obtener el order_id para la suscripción ID: {$suscripcion->id}");
+                        $orden->estado = 'Rechazado';
+                        $this->enviarWebhook($orderId, 'failed');
+                        $suscripcion->estado = 'inactivo';
+                        $suscripcion->save();
+                        Log::warning("Fallo al procesar el pago para la suscripción ID: {$suscripcion->id}");
                     }
+                    $orden->save();
+                } else {
+                    Log::error("No se pudo obtener el order_id para la suscripción ID: {$suscripcion->id}");
+                }
+            }
+    
+            // Procesar suscripciones no recurrentes
+            foreach ($suscripcionesNoRecurrentes as $suscripcion) {
+                // Cambiar el estado de la suscripción a inactivo
+                $suscripcion->estado = 'inactivo';
+                $suscripcion->save();
+    
+                Log::info("La suscripción no recurrente ID: {$suscripcion->id} se ha marcado como inactiva.");
             }
     
             Log::info('Procesamiento de suscripciones finalizado.');
@@ -66,10 +76,11 @@ class ProcesarSuscripciones
         }
     }
     
+    
     // Actualiza la fecha de renovación según la frecuencia
     private function actualizarFechaRenovacion($suscripcion)
     {
-        switch (strtolower($suscripcion->tipo_recurrencia)) {
+        switch (strtolower($suscripcion->membresia->tipo_recurrencia)) {
             case 'diario':
                 $suscripcion->fecha_renovacion = $suscripcion->fecha_renovacion->addDay();
                 break;
