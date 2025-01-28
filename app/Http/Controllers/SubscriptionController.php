@@ -212,7 +212,7 @@ class SubscriptionController extends Controller
         $orden->save();
         
         // Verificar si el pago es recurrente o no
-        if ($request->input('recurring_payment')) {
+        if ($request->input('aceptaRecurrencia') === true) {
             // Si es un pago recurrente, tokenizamos la tarjeta
             $tokenData = $this->tokenizarTarjeta($request);
     
