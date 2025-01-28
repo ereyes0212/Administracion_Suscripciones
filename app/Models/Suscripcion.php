@@ -28,6 +28,13 @@ class Suscripcion extends Model
         'fecha_finalizacion',
     ];
 
+    protected $casts = [
+        'fecha_inicio' => 'datetime',
+        'fecha_ultimo_pago' => 'datetime',
+        'fecha_renovacion' => 'datetime',
+        'fecha_finalizacion' => 'datetime',
+    ];
+
     public function cliente()
     {
         return $this->belongsTo(Cliente::class, 'cliente_id');
