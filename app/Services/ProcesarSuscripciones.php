@@ -143,7 +143,7 @@ class ProcesarSuscripciones
                 'customer_email' => $suscripcion->cliente->correo,
                 'order_id' => $orderId,
                 'order_currency' => 'HNL',
-                'order_amount' => $suscripcion->monto, // Puedes cambiarlo dependiendo de cómo guardes el monto
+                'order_amount' => '2', // Puedes cambiarlo dependiendo de cómo guardes el monto
                 'env' => 'sandbox',
                 'lang' => 'es',
             ]);
