@@ -29,7 +29,7 @@
                     <tr>
                         <th>Cliente</th>
                         <th>Monto</th>
-                        <th>Recurrencia</th>
+                        <th>Membresia</th>
                         <th>Fecha de inicio</th>
                         <th>Renovación</th>
                         <th>Fecha de finalización</th>
@@ -42,7 +42,7 @@
                     <tr>
                         <td>{{ $suscripcion->cliente->nombre }}</td>
                         <td>{{ $suscripcion->monto }}</td>
-                        <td>{{ $suscripcion->membresia->tipo_recurrencia }}</td>
+                        <td>{{ $suscripcion->membresia->nombre }}</td>
                         <td>{{ $suscripcion->fecha_inicio }}</td>
                         <td>{{ $suscripcion->fecha_renovacion }}</td>
                         <td>{{ $suscripcion->fecha_finalizacion }}</td>
