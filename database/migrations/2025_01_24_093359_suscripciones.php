@@ -15,6 +15,7 @@ class Suscripciones extends Migration
             $table->decimal('monto', 10, 2)->default(0.00);
             $table->string('token_pago')->nullable();
             $table->enum('estado', ['activo', 'inactivo', 'pendiente', 'suspendido'])->default('activo');
+            $table->boolean('recurrencia')->default(false); // Campo nuevo para indicar recurrencia
             $table->timestamp('fecha_inicio')->useCurrent();
             $table->timestamp('fecha_ultimo_pago')->nullable();
             $table->timestamp('fecha_renovacion')->nullable();

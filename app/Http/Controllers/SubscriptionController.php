@@ -226,6 +226,7 @@ class SubscriptionController extends Controller
                 $suscripcion->estado = 'Activo';
                 $suscripcion->fecha_inicio = now();
                 $suscripcion->fecha_ultimo_pago = now();
+                $suscripcion->recurrencia = $request->input('aceptaRecurrencia');
     
                 // Definir fecha de renovación según la recurrencia
                 switch ($request->input('recurrence')) {
@@ -274,6 +275,8 @@ class SubscriptionController extends Controller
             $suscripcion->membresia_id = $request->input('membresia_id');
             $suscripcion->monto = $request->input('order_amount');
             $suscripcion->estado = 'Activo';
+            $suscripcion->recurrencia = $request->input('aceptaRecurrencia');
+
             $suscripcion->fecha_inicio = now();
     
             // Definir fecha de finalización según la recurrencia

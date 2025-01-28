@@ -21,10 +21,11 @@ class Suscripcion extends Model
         'monto',
         'token_pago',
         'estado',
+        'recurrencia', // Nuevo campo agregado
         'fecha_inicio',
         'fecha_ultimo_pago',
         'fecha_renovacion',
-        'fecha_finalizacion',  // Nueva columna agregada
+        'fecha_finalizacion',
     ];
 
     public function cliente()
