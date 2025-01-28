@@ -40,6 +40,7 @@ class ProcesarSuscripciones
                     $orden->suscripcion_id = $suscripcion->id;
                     $orden->orden_id_wp = $orderId;
                     $orden->estado = 'Pendiente';
+                    $orden->tipo = 'Renovación';
                     $orden->fecha = now()->format('Y-m-d H:i:s');
                     $orden->save();
     
