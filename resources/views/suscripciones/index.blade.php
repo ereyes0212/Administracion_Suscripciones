@@ -46,6 +46,7 @@
                         <td>{{ $suscripcion->fecha_inicio }}</td>
                         <td>{{ $suscripcion->fecha_renovacion }}</td>
                         <td>{{ $suscripcion->fecha_finalizacion }}</td>
+                        <td>{{ $suscripcion->estado }}</td>
                         <td>{{ $suscripcion->recurrencia ? 'Recurrente' : 'No Recurrente' }}</td>
 {{-- 
                         <td style="text-align: end">
