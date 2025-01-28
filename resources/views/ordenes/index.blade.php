@@ -31,6 +31,7 @@
                         <th>Orden WP</th>
                         <th>Estado</th>
                         <th>Fecha</th>
+                        <th>Tipo</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,6 +41,7 @@
                         <td>{{ $orden->orden_id_wp ?? 'No disponible' }}</td>
                         <td>{{ $orden->estado }}</td>
                         <td>{{ $orden->fecha }}</td>
+                        <td>{{ $orden->tipo }}</td>
 {{-- 
                         <td style="text-align: end">
                             @if(auth()->check() && $equipo->idUsuario == auth()->user()->id)
