@@ -9,34 +9,37 @@ use Illuminate\Support\Facades\Http;
 class SaleTransationPixelPay
 {
     protected $endpoint;
-    protected $key;
+    protected $apiKey;
     protected $callbackUrl;
+    protected $secretKey;
     protected $cancelUrl;
     protected $completeUrl;
 
     public function __construct()
     {
-        // Configuración de las URLs y clave
-        $this->endpoint = env('PIXELPAY_ENDPOINT'); // Endpoint proporcionado por PixelPay
-        $this->key = env('PIXELPAY_KEY'); // Llave del comercio
-        $this->callbackUrl = 'https://httpbin.org/status/200'; // URL para recibir notificación de éxito (opcional)
+        // Configuración de las URLs y claves
+        $this->endpoint = env('ENDPOINT'); // Endpoint de la API
+        $this->apiKey = env('API_KEY'); // API Key
+        $this->secretKey = env('SECRET_KEY'); // Secret Key
+        
+        // URLs fijas de callback, cancel y complete
+        $this->callbackUrl = 'https://httpbin.org/status/200'; // URL para recibir notificación de éxito
         $this->cancelUrl = 'https://httpbin.org/status/200'; // URL en caso de cancelación
         $this->completeUrl = 'https://httpbin.org/status/200'; // URL en caso de éxito
     }
     
-
     public function procesarPago(array $data)
     {
         try {
             Log::info('Datos recibidos para el pago:', $data);
-
+    
             // Extraer primer nombre y apellido del campo customer_name
             $nameParts = explode(' ', $data['customer_name']);
             $firstName = $nameParts[0]; // Primer nombre
             $lastName = isset($nameParts[1]) ? implode(' ', array_slice($nameParts, 1)) : ''; // Apellido (si existe)
-            
+    
             $postFields = [
-                "_key" => $this->key,
+                "_key" => $this->apiKey,
                 "_callback" => $this->callbackUrl, // URL de notificación (opcional)
                 "_cancel" => $this->cancelUrl, // URL de cancelación
                 "_complete" => $this->completeUrl, // URL de éxito
@@ -52,12 +55,15 @@ class SaleTransationPixelPay
                 "_country" => $data['billing_country'], // País
                 "json" => "true", // Incluir en modo JSON en respuestas (opcional)
             ];
-
-            // Realizar la solicitud HTTP POST utilizando Http::post
-            $response = Http::asForm()->post($this->endpoint, $postFields);
-
+    
+            // Realizar la solicitud HTTP POST usando Http::withHeaders
+            $response = Http::withHeaders([
+                'x-auth-key' => $this->apiKey, // API Key
+                'x-auth-hash' => $this->secretKey, // Secret Key
+            ])->post($this->endpoint, $postFields);
+    
             Log::info('Respuesta de la transacción:', ['response' => $response->body()]);
-
+    
             // Manejar la respuesta
             $responseData = $response->json();
             if ($responseData && isset($responseData['status']) && $responseData['status'] == 'success') {
@@ -67,7 +73,7 @@ class SaleTransationPixelPay
                     'redirect_url' => $responseData['redirect_url'], // URL a la que redirigir al cliente
                 ];
             }
-
+    
             return [
                 'status' => 'error',
                 'message' => $responseData['message'] ?? 'Error desconocido en la transacción',
