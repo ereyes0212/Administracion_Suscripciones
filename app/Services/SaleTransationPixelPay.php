@@ -21,7 +21,7 @@ class SaleTransationPixelPay
         $this->endpoint = env('ENDPOINT'); // Endpoint de la API
         $this->apiKey = env('API_KEY'); // API Key
         $this->secretKey = env('SECRET_KEY'); // Secret Key
-        
+
         // URLs fijas de callback, cancel y complete
         $this->callbackUrl = 'https://httpbin.org/status/200'; // URL para recibir notificación de éxito
         $this->cancelUrl = 'https://httpbin.org/status/200'; // URL en caso de cancelación
@@ -62,7 +62,7 @@ class SaleTransationPixelPay
                 'x-auth-key' => $this->apiKey, // API Key
                 'x-auth-hash' => $this->secretKey, // Secret Key
                 'Content-Type' => 'application/x-www-form-urlencoded', // Establecer el tipo de contenido adecuado
-            ])->asForm()->post($this->endpoint. '/api/v2/transaction/hosted/', $postFields); // Usar asForm() para enviar los datos como x-www-form-urlencoded
+            ])->asForm()->post($this->endpoint . '/api/v2/transaction/hosted/other', $postFields); // Usar asForm() para enviar los datos como x-www-form-urlencoded
 
             Log::info('Respuesta de la transacción:', ['response' => $response->body()]);
 
