@@ -22,6 +22,7 @@ class SaleTransationPixelPay
     public function __construct()
     {
         $this->settings = new Settings();
+        $this->settings->setupSandbox();
         $this->settings->setupEndpoint(env('ENDPOINT')); // Agrega esta variable en tu .env
         $this->settings->setupCredentials(env('KEY_ID'), env('SECRET_KEY'));
         $this->transaction = new Transaction($this->settings);
