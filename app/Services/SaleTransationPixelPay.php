@@ -50,6 +50,7 @@ class SaleTransationPixelPay
             $order->currency = $data['currency'];
             $order->customer_name = $data['customer_name'];
             $order->customer_email = $data['customer_email'];
+            $order->amount = $data['order_amount'];
 
             $sale = new SaleTransaction();
             $sale->setOrder($order);

@@ -181,7 +181,8 @@ class SubscriptionController extends Controller
             'order_id' => $request->order_id,
             'currency' => $request->order_currency,
             'customer_name' => $request->card_holder,
-            'customer_email' => $request->customer_email
+            'customer_email' => $request->customer_email,
+            'order_amount' => $request->order_amount
         ]);
 
         if ($response['status'] !== 'success') {
