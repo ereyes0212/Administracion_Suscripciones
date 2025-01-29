@@ -28,17 +28,21 @@ class SaleTransationPixelPay
         try {
             Log::info('Datos recibidos para el pago:', $data);
 
-            // Parámetros requeridos
+            // Extraer primer nombre y apellido del campo customer_name
+            $nameParts = explode(' ', $data['customer_name']);
+            $firstName = $nameParts[0]; // Primer nombre
+            $lastName = isset($nameParts[1]) ? implode(' ', array_slice($nameParts, 1)) : ''; // Apellido (si existe)
+            
             $postFields = [
-                "_key" => $this->key, 
+                "_key" => $this->key,
                 "_callback" => $this->callbackUrl, // URL de notificación (opcional)
                 "_cancel" => $this->cancelUrl, // URL de cancelación
                 "_complete" => $this->completeUrl, // URL de éxito
                 "_order_id" => $data['order_id'], // ID único de la orden
                 "_order_date" => date("d-m-y H:i"), // Fecha de la orden
                 "_amount" => $data['order_amount'], // Monto total de la orden
-                "_first_name" => $data['first_name'], // Nombre del cliente
-                "_last_name" => $data['last_name'], // Apellido del cliente
+                "_first_name" => $firstName, // Primer nombre del cliente
+                "_last_name" => $lastName, // Apellido del cliente
                 "_email" => $data['customer_email'], // Correo electrónico del cliente
                 "_address" => $data['billing_address'], // Dirección del cliente (opcional)
                 "_address_alt" => $data['billing_address_alt'], // Dirección alternativa (opcional)
@@ -48,6 +52,7 @@ class SaleTransationPixelPay
                 "_zip" => $data['billing_zip'], // Código postal (opcional)
                 "json" => "true", // Incluir en modo JSON en respuestas (opcional)
             ];
+            
 
             // Crear la consulta en formato query string
             $queryString = http_build_query($postFields);
