@@ -45,11 +45,9 @@ class SaleTransationPixelPay
                 "_last_name" => $lastName, // Apellido del cliente
                 "_email" => $data['customer_email'], // Correo electrónico del cliente
                 "_address" => $data['billing_address'], // Dirección del cliente (opcional)
-                "_address_alt" => $data['billing_address_alt'], // Dirección alternativa (opcional)
                 "_city" => $data['billing_city'], // Ciudad
                 "_state" => $data['billing_state'], // Estado o provincia
                 "_country" => $data['billing_country'], // País
-                "_zip" => $data['billing_zip'], // Código postal (opcional)
                 "json" => "true", // Incluir en modo JSON en respuestas (opcional)
             ];
             
