@@ -64,7 +64,7 @@ class SaleTransationPixelPay
                 $isValidPayment = $this->transaction->verifyPaymentHash(
                     $result->payment_hash,
                     $order->id,
-                    env('PIXELPAY_SECRET_KEY')
+                    env('SECRET_KEY')
                 );
 
                 if ($isValidPayment) {
