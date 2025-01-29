@@ -58,15 +58,23 @@ class SaleTransationPixelPay
             $sale->setBilling($billing);
 
             $response = $this->transaction->doSale($sale);
+            Log::info('Respuesta de la transacción:', ['response' => $response]);
+            
 
             if (TransactionResult::validateResponse($response)) {
+                Log::info('Respuesta validada correctamente.');
+
+                // Obtener el resultado de la transacción
                 $result = TransactionResult::fromResponse($response);
+            
+                // Log de los datos obtenidos en la respuesta
+                Log::info('Datos de la transacción:', ['result' => $result]);
                 $isValidPayment = $this->transaction->verifyPaymentHash(
                     $result->payment_hash,
                     $order->id,
-                    env('SECRET_KEY')
+                    env('SECRET_KEY'),
                 );
-
+                Log::info('Verificación del hash de pago:', ['isValidPayment' => $isValidPayment]);
                 if ($isValidPayment) {
                     return [
                         'status' => 'success',
