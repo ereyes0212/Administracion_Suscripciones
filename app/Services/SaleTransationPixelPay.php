@@ -2,93 +2,82 @@
 
 namespace App\Services;
 
-use PixelPay\Sdk\Base\Response;
-use PixelPay\Sdk\Models\Settings;
-use PixelPay\Sdk\Models\Card;
-use PixelPay\Sdk\Models\Billing;
-use PixelPay\Sdk\Models\Item;
-use PixelPay\Sdk\Models\Order;
-use PixelPay\Sdk\Requests\SaleTransaction;
-use PixelPay\Sdk\Services\Transaction;
-use PixelPay\Sdk\Entities\TransactionResult;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
 class SaleTransationPixelPay
 {
-    protected $settings;
-    protected $transaction;
+    protected $endpoint;
+    protected $key;
+    protected $callbackUrl;
+    protected $cancelUrl;
+    protected $completeUrl;
 
     public function __construct()
     {
-        $this->settings = new Settings();
-        $this->settings->setupEndpoint(env('ENDPOINT')); // Agrega esta variable en tu .env
-        $this->settings->setupCredentials(env('KEY_ID'), env('SECRET_KEY'));
-        $this->transaction = new Transaction($this->settings);
+        // Configuración de las URLs y clave
+        $this->endpoint = env('PIXELPAY_ENDPOINT'); // Endpoint proporcionado por PixelPay
+        $this->key = env('PIXELPAY_KEY'); // Llave del comercio
+        $this->callbackUrl = env('PIXELPAY_CALLBACK_URL'); // URL para recibir notificación de éxito (opcional)
+        $this->cancelUrl = env('PIXELPAY_CANCEL_URL'); // URL en caso de cancelación
+        $this->completeUrl = env('PIXELPAY_COMPLETE_URL'); // URL en caso de éxito
     }
 
     public function procesarPago(array $data)
     {
         try {
             Log::info('Datos recibidos para el pago:', $data);
-            $card = new Card();
-            $card->number = $data['card_number'];
-            $card->cvv2 = $data['cvv'];
-            $card->expire_month = $data['expire_month'];
-            $card->expire_year = $data['expire_year'];
-            $card->cardholder = $data['cardholder'];
 
-            $billing = new Billing();
-            $billing->address = $data['billing_address'];
-            $billing->country = $data['billing_country'];
-            $billing->state = $data['billing_state'];
-            $billing->city = $data['billing_city'];
-            $billing->phone = $data['billing_phone'];
+            // Parámetros requeridos
+            $postFields = [
+                "_key" => $this->key, 
+                "_callback" => $this->callbackUrl, // URL de notificación (opcional)
+                "_cancel" => $this->cancelUrl, // URL de cancelación
+                "_complete" => $this->completeUrl, // URL de éxito
+                "_order_id" => $data['order_id'], // ID único de la orden
+                "_order_date" => date("d-m-y H:i"), // Fecha de la orden
+                "_amount" => $data['order_amount'], // Monto total de la orden
+                "_first_name" => $data['first_name'], // Nombre del cliente
+                "_last_name" => $data['last_name'], // Apellido del cliente
+                "_email" => $data['customer_email'], // Correo electrónico del cliente
+                "_address" => $data['billing_address'], // Dirección del cliente (opcional)
+                "_address_alt" => $data['billing_address_alt'], // Dirección alternativa (opcional)
+                "_city" => $data['billing_city'], // Ciudad
+                "_state" => $data['billing_state'], // Estado o provincia
+                "_country" => $data['billing_country'], // País
+                "_zip" => $data['billing_zip'], // Código postal (opcional)
+                "json" => "true", // Incluir en modo JSON en respuestas (opcional)
+            ];
 
-            $order = new Order();
-            $order->id = $data['order_id'];
-            $order->currency = $data['currency'];
-            $order->customer_name = $data['customer_name'];
-            $order->customer_email = $data['customer_email'];
-            $order->amount = $data['order_amount'];
+            // Crear la consulta en formato query string
+            $queryString = http_build_query($postFields);
 
-            $sale = new SaleTransaction();
-            $sale->setOrder($order);
-            $sale->setCard($card);
-            $sale->setBilling($billing);
+            // Realizar la solicitud HTTP POST
+            $ch = curl_init($this->endpoint);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $queryString);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            $response = curl_exec($ch);
+            curl_close($ch);
 
-            $response = $this->transaction->doSale($sale);
             Log::info('Respuesta de la transacción:', ['response' => $response]);
-            
 
-            if (TransactionResult::validateResponse($response)) {
-                Log::info('Respuesta validada correctamente.');
-
-                // Obtener el resultado de la transacción
-                $result = TransactionResult::fromResponse($response);
-            
-                // Log de los datos obtenidos en la respuesta
-                Log::info('Datos de la transacción:', ['result' => $result]);
-                $isValidPayment = $this->transaction->verifyPaymentHash(
-                    $result->payment_hash,
-                    $order->id,
-                    env('SECRET_KEY'),
-                );
-                Log::info('Verificación del hash de pago:', ['isValidPayment' => $isValidPayment]);
-                if ($isValidPayment) {
-                    return [
-                        'status' => 'success',
-                        'message' => 'Pago exitoso',
-                        'transaction_id' => $result->payment_uuid
-                    ];
-                }
+            // Manejar la respuesta
+            $responseData = json_decode($response, true);
+            if ($responseData && isset($responseData['status']) && $responseData['status'] == 'success') {
+                return [
+                    'status' => 'success',
+                    'message' => 'Redirección exitosa a PixelPay',
+                    'redirect_url' => $responseData['redirect_url'], // URL a la que redirigir al cliente
+                ];
             }
 
             return [
                 'status' => 'error',
-                'message' => $response->message ?? 'Error desconocido en la transacción'
+                'message' => $responseData['message'] ?? 'Error desconocido en la transacción',
             ];
         } catch (Exception $e) {
+            Log::error('Error en el procesamiento de pago:', ['error' => $e->getMessage()]);
             return [
                 'status' => 'error',
                 'message' => $e->getMessage()
