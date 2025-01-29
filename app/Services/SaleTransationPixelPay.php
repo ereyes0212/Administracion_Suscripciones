@@ -27,43 +27,45 @@ class SaleTransationPixelPay
         $this->cancelUrl = 'https://httpbin.org/status/200'; // URL en caso de cancelación
         $this->completeUrl = 'https://httpbin.org/status/200'; // URL en caso de éxito
     }
-    
+
     public function procesarPago(array $data)
     {
         try {
             Log::info('Datos recibidos para el pago:', $data);
-    
+
             // Extraer primer nombre y apellido del campo customer_name
             $nameParts = explode(' ', $data['customer_name']);
             $firstName = $nameParts[0]; // Primer nombre
             $lastName = isset($nameParts[1]) ? implode(' ', array_slice($nameParts, 1)) : ''; // Apellido (si existe)
-    
+
+            // Preparar los parámetros
             $postFields = [
                 "_key" => $this->apiKey,
-                "_callback" => $this->callbackUrl, // URL de notificación (opcional)
-                "_cancel" => $this->cancelUrl, // URL de cancelación
-                "_complete" => $this->completeUrl, // URL de éxito
-                "_order_id" => $data['order_id'], // ID único de la orden
-                "_order_date" => date("d-m-y H:i"), // Fecha de la orden
-                "_amount" => $data['order_amount'], // Monto total de la orden
-                "_first_name" => $firstName, // Primer nombre del cliente
-                "_last_name" => $lastName, // Apellido del cliente
-                "_email" => $data['customer_email'], // Correo electrónico del cliente
-                "_address" => $data['billing_address'], // Dirección del cliente (opcional)
-                "_city" => $data['billing_city'], // Ciudad
-                "_state" => $data['billing_state'], // Estado o provincia
-                "_country" => $data['billing_country'], // País
+                "_callback" => $this->callbackUrl,
+                "_cancel" => $this->cancelUrl,
+                "_complete" => $this->completeUrl,
+                "_order_id" => $data['order_id'],
+                "_order_date" => date("d-m-y H:i"),
+                "_amount" => $data['order_amount'],
+                "_first_name" => $firstName,
+                "_last_name" => $lastName,
+                "_email" => $data['customer_email'],
+                "_address" => $data['billing_address'],
+                "_city" => $data['billing_city'],
+                "_state" => $data['billing_state'],
+                "_country" => $data['billing_country'],
                 "json" => "true", // Incluir en modo JSON en respuestas (opcional)
             ];
-    
+
             // Realizar la solicitud HTTP POST usando Http::withHeaders
             $response = Http::withHeaders([
                 'x-auth-key' => $this->apiKey, // API Key
                 'x-auth-hash' => $this->secretKey, // Secret Key
-            ])->post($this->endpoint, $postFields);
-    
+                'Content-Type' => 'application/x-www-form-urlencoded', // Establecer el tipo de contenido adecuado
+            ])->asForm()->post($this->endpoint, $postFields); // Usar asForm() para enviar los datos como x-www-form-urlencoded
+
             Log::info('Respuesta de la transacción:', ['response' => $response->body()]);
-    
+
             // Manejar la respuesta
             $responseData = $response->json();
             if ($responseData && isset($responseData['status']) && $responseData['status'] == 'success') {
@@ -73,7 +75,7 @@ class SaleTransationPixelPay
                     'redirect_url' => $responseData['redirect_url'], // URL a la que redirigir al cliente
                 ];
             }
-    
+
             return [
                 'status' => 'error',
                 'message' => $responseData['message'] ?? 'Error desconocido en la transacción',
