@@ -12,6 +12,7 @@ use PixelPay\Sdk\Requests\SaleTransaction;
 use PixelPay\Sdk\Services\Transaction;
 use PixelPay\Sdk\Entities\TransactionResult;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class SaleTransationPixelPay
 {
@@ -29,6 +30,7 @@ class SaleTransationPixelPay
     public function procesarPago(array $data)
     {
         try {
+            Log::info('Datos recibidos para el pago:', $data);
             $card = new Card();
             $card->number = $data['card_number'];
             $card->cvv2 = $data['cvv'];
