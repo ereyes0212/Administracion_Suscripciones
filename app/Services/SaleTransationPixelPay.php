@@ -19,9 +19,9 @@ class SaleTransationPixelPay
         // Configuración de las URLs y clave
         $this->endpoint = env('PIXELPAY_ENDPOINT'); // Endpoint proporcionado por PixelPay
         $this->key = env('PIXELPAY_KEY'); // Llave del comercio
-        $this->callbackUrl = env('PIXELPAY_CALLBACK_URL'); // URL para recibir notificación de éxito
-        $this->cancelUrl = env('PIXELPAY_CANCEL_URL'); // URL en caso de cancelación
-        $this->completeUrl = env('PIXELPAY_COMPLETE_URL'); // URL en caso de éxito
+        $this->callbackUrl = env('https://httpbin.org/status/200'); // URL para recibir notificación de éxito (opcional)
+        $this->cancelUrl = env('https://httpbin.org/status/200'); // URL en caso de cancelación
+        $this->completeUrl = env('https://httpbin.org/status/200'); // URL en caso de éxito
     }
 
     public function procesarPago(array $data)
