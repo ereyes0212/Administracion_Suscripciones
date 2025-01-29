@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use App\Models\Suscripcion; // Importamos el modelo Suscripcion
+use App\Services\SaleTransationPixelPay;
 use Illuminate\Support\Str;  // Necesario para usar la función Str::random
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -164,9 +165,25 @@ class SubscriptionController extends Controller
             'card_expire.digits' => 'La fecha de vencimiento debe tener exactamente 4 dígitos.',
         ]);
     
-    
-        // 1. Procesar el pago con el banco local primero
-        $response = $this->procesarPagoConBancoLocal($request);
+        $pixelPay = new SaleTransationPixelPay();
+
+        $response = $pixelPay->procesarPago([
+            'card_number' =>$request->card_number,
+            'cvv' => $request->card_cvv,
+            'expire_month' => substr($request->card_expire, 2, 2),
+            'expire_year' => substr($request->card_expire, 0, 2),
+            'cardholder' => $request->card_holder,
+            'billing_address' => $request->billing_address,
+            'billing_country' => $request->billing_country,
+            'billing_state' => $request->billing_state,
+            'billing_city' => $request->billing_city,
+            'billing_phone' => $request->billing_phone,
+            'order_id' => $request->order_id,
+            'currency' => $request->order_currency,
+            'customer_name' => $request->card_holder,
+            'customer_email' => $request->customer_email
+        ]);
+
         if ($response['status'] !== 'success') {
             return response()->json([
                 'success' => false,
