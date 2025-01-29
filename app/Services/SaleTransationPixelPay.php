@@ -62,7 +62,7 @@ class SaleTransationPixelPay
                 'x-auth-key' => $this->apiKey, // API Key
                 'x-auth-hash' => $this->secretKey, // Secret Key
                 'Content-Type' => 'application/x-www-form-urlencoded', // Establecer el tipo de contenido adecuado
-            ])->asForm()->post($this->endpoint, $postFields); // Usar asForm() para enviar los datos como x-www-form-urlencoded
+            ])->asForm()->post($this->endpoint. '/api/v2/transaction/hosted/', $postFields); // Usar asForm() para enviar los datos como x-www-form-urlencoded
 
             Log::info('Respuesta de la transacción:', ['response' => $response->body()]);
 
