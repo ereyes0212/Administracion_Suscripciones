@@ -19,7 +19,7 @@ class SaleTransationPixelPay
     {
         // Configuración de las URLs y claves
         $this->endpoint = env('ENDPOINT'); // Endpoint de la API
-        $this->apiKey = env('API_KEY'); // API Key
+        $this->apiKey = env('KEY_ID'); // API Key
         $this->secretKey = env('SECRET_KEY'); // Secret Key
 
         // URLs fijas de callback, cancel y complete
