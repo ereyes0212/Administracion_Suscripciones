@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class SaleTransationPixelPay
 {
@@ -18,9 +19,9 @@ class SaleTransationPixelPay
         // Configuración de las URLs y clave
         $this->endpoint = env('PIXELPAY_ENDPOINT'); // Endpoint proporcionado por PixelPay
         $this->key = env('PIXELPAY_KEY'); // Llave del comercio
-        $this->callbackUrl = env('https://httpbin.org/status/200'); // URL para recibir notificación de éxito (opcional)
-        $this->cancelUrl = env('https://httpbin.org/status/200'); // URL en caso de cancelación
-        $this->completeUrl = env('https://httpbin.org/status/200'); // URL en caso de éxito
+        $this->callbackUrl = env('PIXELPAY_CALLBACK_URL'); // URL para recibir notificación de éxito
+        $this->cancelUrl = env('PIXELPAY_CANCEL_URL'); // URL en caso de cancelación
+        $this->completeUrl = env('PIXELPAY_COMPLETE_URL'); // URL en caso de éxito
     }
 
     public function procesarPago(array $data)
@@ -50,23 +51,14 @@ class SaleTransationPixelPay
                 "_country" => $data['billing_country'], // País
                 "json" => "true", // Incluir en modo JSON en respuestas (opcional)
             ];
-            
 
-            // Crear la consulta en formato query string
-            $queryString = http_build_query($postFields);
+            // Realizar la solicitud HTTP POST utilizando Http::post
+            $response = Http::asForm()->post($this->endpoint, $postFields);
 
-            // Realizar la solicitud HTTP POST
-            $ch = curl_init($this->endpoint);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $queryString);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            $response = curl_exec($ch);
-            curl_close($ch);
-
-            Log::info('Respuesta de la transacción:', ['response' => $response]);
+            Log::info('Respuesta de la transacción:', ['response' => $response->body()]);
 
             // Manejar la respuesta
-            $responseData = json_decode($response, true);
+            $responseData = $response->json();
             if ($responseData && isset($responseData['status']) && $responseData['status'] == 'success') {
                 return [
                     'status' => 'success',
